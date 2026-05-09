@@ -1,0 +1,426 @@
+{
+  "name": "sonara",
+  "displayName": "Sonara",
+  "description": "Project tasks as markdown and local voice input. Two modules in one plugin.",
+  "version": "0.1.0",
+  "publisher": "artisanweblab",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artisanweblab/sonara"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sonara.activeProject.pick",
+        "title": "Switch Active Project",
+        "category": "Sonara",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "sonara.tasks.new",
+        "title": "New Task",
+        "category": "Sonara",
+        "icon": "$(add)"
+      },
+      {
+        "command": "sonara.tasks.refresh",
+        "title": "Refresh",
+        "category": "Sonara",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sonara.tasks.init",
+        "title": "Initialize for This Project",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.startRecording",
+        "title": "Start Recording",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.stopRecording",
+        "title": "Stop Recording",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.toggleRecording",
+        "title": "Start / Stop Recording",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.cancelRecording",
+        "title": "Cancel Recording (discard)",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.showLog",
+        "title": "Show Log",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.copyLastTranscription",
+        "title": "Copy Last Transcription",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.searchLog",
+        "title": "Search Log",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.clearProjectLog",
+        "title": "Clear Project Log",
+        "category": "Sonara",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "sonara.voice.exportLogMarkdown",
+        "title": "Export Log as Markdown",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.openLogFile",
+        "title": "Open Log File",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.openStorageFolder",
+        "title": "Open Project Storage Folder",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.openGlobalStorageFolder",
+        "title": "Open Global Storage Folder",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.changeModel",
+        "title": "Change Model",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.changeLanguage",
+        "title": "Change Language",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.changeDevice",
+        "title": "Change Compute Device",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.restartServer",
+        "title": "Restart Server",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.showServerLogs",
+        "title": "Show Server Logs",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.showExtensionLogs",
+        "title": "Show Extension Logs",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.downloadModel",
+        "title": "Download Model",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.resetExtension",
+        "title": "Reset Extension",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.transcribeFile",
+        "title": "Transcribe File...",
+        "category": "Sonara",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "sonara.voice.showTranscripts",
+        "title": "Show Transcripts",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.toggleStreamingMode",
+        "title": "Change Streaming Mode (off / adaptive / on)",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.voice.editVocabulary",
+        "title": "Edit Project Vocabulary",
+        "category": "Sonara",
+        "icon": "$(book)"
+      },
+      {
+        "command": "sonara.voice.toggleShowAll.expand",
+        "title": "Show All Records",
+        "category": "Sonara",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "sonara.voice.toggleShowAll.collapse",
+        "title": "Show Recent Only",
+        "category": "Sonara",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "sonara.voice.log.refresh",
+        "title": "Refresh Voice Log",
+        "category": "Sonara",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sonara.voice.transcripts.refresh",
+        "title": "Refresh Voice Transcripts",
+        "category": "Sonara",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "sonara.activeProject.pick",
+          "when": "view == sonara.tasks || view == sonara.voice.log || view == sonara.voice.transcripts",
+          "group": "navigation@0"
+        },
+        {
+          "command": "sonara.tasks.new",
+          "when": "view == sonara.tasks",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sonara.tasks.refresh",
+          "when": "view == sonara.tasks",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sonara.voice.toggleShowAll.expand",
+          "when": "view == sonara.voice.log && sonara.voice.log.canToggleShowAll && !sonara.voice.log.showAll",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sonara.voice.toggleShowAll.collapse",
+          "when": "view == sonara.voice.log && sonara.voice.log.canToggleShowAll && sonara.voice.log.showAll",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sonara.voice.editVocabulary",
+          "when": "view == sonara.voice.log",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sonara.voice.clearProjectLog",
+          "when": "view == sonara.voice.log",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sonara.voice.log.refresh",
+          "when": "view == sonara.voice.log",
+          "group": "navigation@4"
+        },
+        {
+          "command": "sonara.voice.editVocabulary",
+          "when": "view == sonara.voice.transcripts",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sonara.voice.transcribeFile",
+          "when": "view == sonara.voice.transcripts",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sonara.voice.transcripts.refresh",
+          "when": "view == sonara.voice.transcripts",
+          "group": "navigation@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "sonara.voice.cancelRecording",
+          "when": "sonara.voice.isRecording"
+        },
+        {
+          "command": "sonara.voice.toggleShowAll.expand",
+          "when": "false"
+        },
+        {
+          "command": "sonara.voice.toggleShowAll.collapse",
+          "when": "false"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "sonara.voice.toggleRecording",
+        "key": "ctrl+shift+m"
+      },
+      {
+        "command": "sonara.voice.cancelRecording",
+        "key": "ctrl+alt+m",
+        "when": "sonara.voice.isRecording"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sonara",
+          "title": "Sonara",
+          "icon": "media/icons/sonara.svg"
+        }
+      ]
+    },
+    "views": {
+      "sonara": [
+        {
+          "type": "webview",
+          "id": "sonara.tasks",
+          "name": "Tasks",
+          "icon": "media/icons/tasks.svg",
+          "order": 2
+        },
+        {
+          "type": "webview",
+          "id": "sonara.voice.log",
+          "name": "Voice Log",
+          "icon": "media/icons/voice-log.svg",
+          "order": 3
+        },
+        {
+          "type": "webview",
+          "id": "sonara.voice.transcripts",
+          "name": "Voice Transcripts",
+          "icon": "media/icons/voice-transcripts.svg",
+          "order": 4
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Sonara",
+      "properties": {
+        "sonara.voice.model": {
+          "type": "string",
+          "default": "large-v3",
+          "enum": ["tiny", "base", "small", "medium", "large-v2", "large-v3"],
+          "description": "Whisper model to use for transcription"
+        },
+        "sonara.voice.device": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "cuda:0", "cuda:1", "cpu"],
+          "description": "Compute device for Whisper"
+        },
+        "sonara.voice.language": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "ru", "uk", "en", "de", "fr", "es", "it", "pl"],
+          "description": "Transcription language (auto = detect)"
+        },
+        "sonara.voice.computeType": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "float16", "int8_float16", "int8", "float32"],
+          "description": "Compute type for faster-whisper"
+        },
+        "sonara.voice.vadFilter": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice activity detection filter"
+        },
+        "sonara.voice.stopDelayMs": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 0,
+          "maximum": 5000,
+          "description": "Extra recording time (ms) after Stop is pressed, so the last words are not cut off"
+        },
+        "sonara.voice.streamingMode": {
+          "type": "string",
+          "default": "off",
+          "enum": ["off", "on", "adaptive"],
+          "enumDescriptions": [
+            "Classic: record, stop, then transcribe in one shot. Best accuracy on short messages.",
+            "Live: transcribe continuously while you speak. Requires a CUDA GPU; on CPU it will overload the machine.",
+            "Adaptive: stay in classic mode for short messages, switch to live mode automatically once recording exceeds the threshold. Requires a CUDA GPU for the live phase."
+          ],
+          "description": "Streaming transcription mode. 'adaptive' runs short recordings in classic mode (more accurate) and only engages live transcription on long ones (faster final result on long context)."
+        },
+        "sonara.voice.adaptiveStreamingThresholdSec": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 300,
+          "description": "In adaptive streaming mode, recording switches to live transcription once it exceeds this many seconds."
+        },
+        "sonara.voice.streamingIntervalSec": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "How often (seconds) the streaming transcriber emits a partial result"
+        },
+        "sonara.voice.beamSize": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Beam size for Whisper decoding"
+        },
+        "sonara.voice.log.maxRecords": {
+          "type": "number",
+          "default": 1000,
+          "description": "Maximum records per project log"
+        },
+        "sonara.voice.log.onLimitExceeded": {
+          "type": "string",
+          "default": "delete-oldest",
+          "enum": ["delete-oldest", "archive", "ask"],
+          "description": "What to do when log limit is exceeded"
+        },
+        "sonara.voice.log.autoOpenPanel": {
+          "type": "boolean",
+          "default": false,
+          "description": "Auto-open Voice Log panel on VS Code start"
+        },
+        "sonara.voice.log.showNotificationOnTranscribe": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show toast notification after transcription"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "ws": "^8.18.0"
+  }
+}

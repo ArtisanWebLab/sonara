@@ -1,0 +1,23 @@
+import * as vscode from 'vscode';
+
+import { CommandDeps } from './types';
+import { ensureVocabularyFile } from '../webview/voice-log/vocabulary-store';
+import { vocabularyFile, ensureProjectStructure } from '../../../shared/project-layout';
+import { openInEditor } from '../../../shared/fs-utils';
+
+export function registerVocabularyCommands(deps: CommandDeps): void {
+    const { extensionContext, activeProject } = deps;
+
+    extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('sonara.voice.editVocabulary', async () => {
+            const folder = activeProject.get();
+            if (!folder) {
+                vscode.window.showInformationMessage('Open a folder to use voice features.');
+                return;
+            }
+            ensureProjectStructure(folder);
+            const filePath = ensureVocabularyFile(vocabularyFile(folder));
+            await openInEditor(filePath);
+        }),
+    );
+}

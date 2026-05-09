@@ -1,0 +1,417 @@
+import * as vscode from 'vscode';
+import { TaskStore } from '../store/task-store';
+import {
+    NO_STATUS_SECTION_ID,
+    PRIORITIES,
+    PRIORITY_LABELS,
+    PRIORITY_RANK,
+    STATUSES,
+    STATUS_LABELS,
+    Task,
+    TaskParseError,
+    TaskPriority,
+    TaskStatus,
+} from '../types';
+import { buildPanelHtml } from './panel-html';
+import { ensureTasksFolder } from '../commands/ensure-tasks-folder';
+import { executeNewTask } from '../commands/new-task-command';
+import { executeChangeSprint } from '../commands/change-sprint-command';
+import { executeEditLabels } from '../commands/edit-labels-command';
+import { executeChangeStatus } from '../commands/change-status-command';
+import { executeChangePriority } from '../commands/change-priority-command';
+
+type IncomingMessage =
+    | { type: 'ready' }
+    | { type: 'refresh' }
+    | { type: 'initializeTasks' }
+    | { type: 'newTask'; status: TaskStatus | null }
+    | { type: 'openPreview'; id: string }
+    | { type: 'openEditor'; id: string }
+    | { type: 'copyText'; id: string }
+    | { type: 'copyPath'; id: string }
+    | { type: 'changeStatus'; id: string }
+    | { type: 'changePriority'; id: string }
+    | { type: 'changeSprint'; id: string }
+    | { type: 'editLabels'; id: string }
+    | { type: 'delete'; id: string }
+    | { type: 'toggleSection'; sectionId: string; collapsed: boolean }
+    | { type: 'openFilterPicker'; kind: 'priority' | 'sprint' | 'label' }
+    | { type: 'toggleFilterValue'; kind: 'priority' | 'sprint' | 'label'; value: string }
+    | { type: 'clearFilters' };
+
+interface TaskFilters {
+    priorities: TaskPriority[];
+    sprints: string[];
+    labels: string[];
+}
+
+interface TaskDto {
+    id: string;
+    title: string;
+    status: TaskStatus | null;
+    priority: TaskPriority;
+    sprint: string | null;
+    labels: string[];
+    created: string | null;
+    updated: string | null;
+    summary: string;
+    body: string;
+}
+
+interface ErrorDto {
+    id: string;
+    fileName: string;
+    message: string;
+}
+
+interface MetaDto {
+    statuses: readonly TaskStatus[];
+    statusLabels: Record<TaskStatus, string>;
+    priorities: readonly TaskPriority[];
+    priorityLabels: Record<TaskPriority, string>;
+    priorityRank: Record<TaskPriority, number>;
+    noStatusSectionId: string;
+}
+
+interface StateDto {
+    tasks: TaskDto[];
+    errors: ErrorDto[];
+    hasTasksDir: boolean;
+    projectName: string;
+    collapsedSections: string[];
+    filters: TaskFilters;
+    meta: MetaDto;
+}
+
+const COLLAPSED_SECTIONS_KEY = 'sonara.tasks.collapsedSections';
+const DEFAULT_COLLAPSED_SECTIONS: readonly string[] = ['backlog', 'done', 'archived', NO_STATUS_SECTION_ID];
+const FILTERS_KEY = 'sonara.tasks.filters';
+const DEFAULT_FILTERS: TaskFilters = { priorities: [], sprints: [], labels: [] };
+
+export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Disposable {
+    public static readonly VIEW_ID = 'sonara.tasks';
+
+    private view: vscode.WebviewView | undefined;
+    private secondaryColumn: vscode.ViewColumn | undefined;
+    private readonly disposables: vscode.Disposable[] = [];
+
+    public constructor(
+        private readonly store: TaskStore,
+        private readonly extensionUri: vscode.Uri,
+        private readonly memento: vscode.Memento,
+    ) {
+        this.disposables.push(this.store.onDidChange(() => this.pushState()));
+    }
+
+    public resolveWebviewView(view: vscode.WebviewView): void {
+        this.view = view;
+        view.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [this.extensionUri],
+        };
+        view.webview.html = buildPanelHtml();
+        view.webview.onDidReceiveMessage((msg: IncomingMessage) => {
+            void this.handleMessage(msg);
+        });
+        view.onDidChangeVisibility(() => {
+            if (view.visible) {
+                this.pushState();
+            }
+        });
+        this.pushState();
+    }
+
+    private async handleMessage(msg: IncomingMessage): Promise<void> {
+        switch (msg.type) {
+            case 'ready':
+            case 'refresh':
+                await this.store.rescan();
+                this.pushState();
+                return;
+            case 'initializeTasks':
+                await ensureTasksFolder(this.store);
+                this.pushState();
+                return;
+            case 'newTask':
+                await executeNewTask(this.store, msg.status ?? 'inbox');
+                return;
+            case 'openPreview': {
+                const uri = this.store.getUriByPath(msg.id);
+                if (uri) {
+                    await this.openMarkdownPreviewReusing(uri);
+                }
+                return;
+            }
+            case 'openEditor': {
+                const uri = this.store.getUriByPath(msg.id);
+                if (uri) {
+                    const column = this.resolveSecondaryColumn();
+                    const document = await vscode.workspace.openTextDocument(uri);
+                    await vscode.window.showTextDocument(document, { viewColumn: column });
+                    if (column === vscode.ViewColumn.Beside) {
+                        this.secondaryColumn = vscode.window.tabGroups.activeTabGroup.viewColumn;
+                    }
+                }
+                return;
+            }
+            case 'copyText': {
+                const task = this.store.getTaskByPath(msg.id);
+                if (task) {
+                    await vscode.env.clipboard.writeText(task.body);
+                    this.postCopied(msg.id, 'text');
+                }
+                return;
+            }
+            case 'copyPath': {
+                const uri = this.store.getUriByPath(msg.id);
+                if (uri) {
+                    await vscode.env.clipboard.writeText(uri.fsPath);
+                    this.postCopied(msg.id, 'path');
+                }
+                return;
+            }
+            case 'changeStatus':
+                await executeChangeStatus(this.store, msg.id);
+                return;
+            case 'changePriority':
+                await executeChangePriority(this.store, msg.id);
+                return;
+            case 'changeSprint':
+                await executeChangeSprint(this.store, msg.id);
+                return;
+            case 'editLabels':
+                await executeEditLabels(this.store, msg.id);
+                return;
+            case 'delete':
+                await this.handleDelete(msg.id);
+                return;
+            case 'toggleSection':
+                await this.handleToggleSection(msg.sectionId, msg.collapsed);
+                return;
+            case 'openFilterPicker':
+                await this.handleOpenFilterPicker(msg.kind);
+                return;
+            case 'toggleFilterValue':
+                await this.handleToggleFilterValue(msg.kind, msg.value);
+                return;
+            case 'clearFilters':
+                await this.memento.update(FILTERS_KEY, DEFAULT_FILTERS);
+                this.pushState();
+                return;
+        }
+    }
+
+    private async handleOpenFilterPicker(kind: 'priority' | 'sprint' | 'label'): Promise<void> {
+        const current = this.getFilters();
+        let items: vscode.QuickPickItem[];
+        let title: string;
+        let selectedValues: string[];
+        let allValues: string[];
+        if (kind === 'priority') {
+            allValues = [...PRIORITIES];
+            selectedValues = current.priorities;
+            title = 'Filter by Priority';
+            items = allValues.map(v => ({ label: PRIORITY_LABELS[v as TaskPriority], description: v, picked: selectedValues.includes(v) }));
+        } else if (kind === 'sprint') {
+            allValues = this.getAvailableSprints();
+            selectedValues = current.sprints;
+            title = 'Filter by Sprint';
+            items = allValues.map(v => ({ label: v, picked: selectedValues.includes(v) }));
+        } else {
+            allValues = this.getAvailableLabels();
+            selectedValues = current.labels;
+            title = 'Filter by Labels';
+            items = allValues.map(v => ({ label: v, picked: selectedValues.includes(v) }));
+        }
+        if (items.length === 0) {
+            await vscode.window.showInformationMessage(`No ${kind} values available.`);
+            return;
+        }
+        const picked = await vscode.window.showQuickPick(items, { canPickMany: true, title });
+        if (!picked) return;
+        const pickedValues = picked.map(it => kind === 'priority' ? (it.description as string) : it.label);
+        const next: TaskFilters = { ...current };
+        if (kind === 'priority') next.priorities = pickedValues as TaskPriority[];
+        else if (kind === 'sprint') next.sprints = pickedValues;
+        else next.labels = pickedValues;
+        await this.memento.update(FILTERS_KEY, next);
+        this.pushState();
+    }
+
+    private async handleToggleFilterValue(kind: 'priority' | 'sprint' | 'label', value: string): Promise<void> {
+        const current = this.getFilters();
+        const next: TaskFilters = {
+            priorities: [...current.priorities],
+            sprints: [...current.sprints],
+            labels: [...current.labels],
+        };
+        if (kind === 'priority') {
+            next.priorities = next.priorities.filter(v => v !== value);
+        } else if (kind === 'sprint') {
+            next.sprints = next.sprints.filter(v => v !== value);
+        } else {
+            next.labels = next.labels.filter(v => v !== value);
+        }
+        await this.memento.update(FILTERS_KEY, next);
+        this.pushState();
+    }
+
+    private getFilters(): TaskFilters {
+        const stored = this.memento.get<TaskFilters>(FILTERS_KEY);
+        if (!stored) return { priorities: [], sprints: [], labels: [] };
+        return {
+            priorities: stored.priorities ?? [],
+            sprints: stored.sprints ?? [],
+            labels: stored.labels ?? [],
+        };
+    }
+
+    private getSanitizedFilters(): TaskFilters {
+        const current = this.getFilters();
+        const availableSprints = new Set(this.getAvailableSprints());
+        const availableLabels = new Set(this.getAvailableLabels());
+        const sanitized: TaskFilters = {
+            priorities: current.priorities,
+            sprints: current.sprints.filter(v => availableSprints.has(v)),
+            labels: current.labels.filter(v => availableLabels.has(v)),
+        };
+        if (sanitized.sprints.length !== current.sprints.length || sanitized.labels.length !== current.labels.length) {
+            void this.memento.update(FILTERS_KEY, sanitized);
+        }
+        return sanitized;
+    }
+
+    private getAvailableSprints(): string[] {
+        const set = new Set<string>();
+        for (const entry of this.store.getEntries()) {
+            if (entry.kind === 'task' && entry.task.sprint) set.add(entry.task.sprint);
+        }
+        return Array.from(set).sort();
+    }
+
+    private getAvailableLabels(): string[] {
+        const set = new Set<string>();
+        for (const entry of this.store.getEntries()) {
+            if (entry.kind === 'task') {
+                for (const l of entry.task.labels) set.add(l);
+            }
+        }
+        return Array.from(set).sort();
+    }
+
+    private async handleToggleSection(sectionId: string, collapsed: boolean): Promise<void> {
+        const current = this.getCollapsedSections();
+        const next = new Set(current);
+        if (collapsed) {
+            next.add(sectionId);
+        } else {
+            next.delete(sectionId);
+        }
+        await this.memento.update(COLLAPSED_SECTIONS_KEY, Array.from(next));
+    }
+
+    private getCollapsedSections(): string[] {
+        return this.memento.get<string[]>(COLLAPSED_SECTIONS_KEY) ?? Array.from(DEFAULT_COLLAPSED_SECTIONS);
+    }
+
+    private async handleDelete(id: string): Promise<void> {
+        const uri = this.store.getUriByPath(id);
+        if (!uri) return;
+        const task = this.store.getTaskByPath(id);
+        const label = task ? task.title : this.store.getErrorByPath(id)?.fileName ?? id;
+        const choice = await vscode.window.showWarningMessage(
+            `Delete task "${label}"? This cannot be undone from the plugin.`,
+            { modal: true },
+            'Delete',
+        );
+        if (choice !== 'Delete') return;
+        await vscode.workspace.fs.delete(uri, { useTrash: true });
+    }
+
+    private postCopied(id: string, kind: 'text' | 'path'): void {
+        this.view?.webview.postMessage({ type: 'copied', id, kind });
+    }
+
+    private pushState(): void {
+        if (!this.view) return;
+        this.view.webview.postMessage({ type: 'state', state: this.buildState() });
+    }
+
+    private buildState(): StateDto {
+        const tasks: TaskDto[] = [];
+        const errors: ErrorDto[] = [];
+        for (const entry of this.store.getEntries()) {
+            if (entry.kind === 'task') {
+                tasks.push(taskToDto(entry.task));
+            } else {
+                errors.push(errorToDto(entry.error));
+            }
+        }
+        return {
+            tasks,
+            errors,
+            hasTasksDir: this.store.hasTasksDir(),
+            projectName: vscode.workspace.workspaceFolders?.[0]?.name ?? '',
+            collapsedSections: this.getCollapsedSections(),
+            filters: this.getSanitizedFilters(),
+            meta: {
+                statuses: STATUSES,
+                statusLabels: STATUS_LABELS,
+                priorities: PRIORITIES,
+                priorityLabels: PRIORITY_LABELS,
+                priorityRank: PRIORITY_RANK,
+                noStatusSectionId: NO_STATUS_SECTION_ID,
+            },
+        };
+    }
+
+    private resolveSecondaryColumn(): vscode.ViewColumn {
+        if (this.secondaryColumn !== undefined) {
+            const stillOpen = vscode.window.tabGroups.all.some(
+                g => g.viewColumn === this.secondaryColumn && g.tabs.length > 0,
+            );
+            if (stillOpen) {
+                return this.secondaryColumn;
+            }
+            this.secondaryColumn = undefined;
+        }
+        return vscode.ViewColumn.Beside;
+    }
+
+    private async openMarkdownPreviewReusing(uri: vscode.Uri): Promise<void> {
+        const column = this.resolveSecondaryColumn();
+        await vscode.commands.executeCommand('vscode.openWith', uri, 'vscode.markdown.preview.editor', column);
+        if (column === vscode.ViewColumn.Beside) {
+            this.secondaryColumn = vscode.window.tabGroups.activeTabGroup.viewColumn;
+        }
+    }
+
+    public dispose(): void {
+        for (const d of this.disposables) {
+            d.dispose();
+        }
+    }
+}
+
+function taskToDto(task: Task): TaskDto {
+    return {
+        id: task.fileUri.fsPath,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        sprint: task.sprint,
+        labels: task.labels,
+        created: task.created,
+        updated: task.updated,
+        summary: task.summary,
+        body: task.body,
+    };
+}
+
+function errorToDto(error: TaskParseError): ErrorDto {
+    return {
+        id: error.fileUri.fsPath,
+        fileName: error.fileName,
+        message: error.message,
+    };
+}
