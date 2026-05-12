@@ -40,7 +40,7 @@
       },
       {
         "command": "sonara.tasks.refresh",
-        "title": "Refresh",
+        "title": "Refresh Tasks",
         "category": "Sonara",
         "icon": "$(refresh)"
       },
@@ -202,7 +202,7 @@
         {
           "command": "sonara.activeProject.pick",
           "when": "view == sonara.tasks || view == sonara.voice.log || view == sonara.voice.transcripts",
-          "group": "navigation@0"
+          "group": "navigation@99"
         },
         {
           "command": "sonara.tasks.new",
@@ -217,7 +217,7 @@
         {
           "command": "sonara.tasks.refresh",
           "when": "view == sonara.tasks",
-          "group": "navigation@3"
+          "group": "1_actions@1"
         },
         {
           "command": "sonara.voice.toggleShowAll.expand",
@@ -232,32 +232,32 @@
         {
           "command": "sonara.voice.editVocabulary",
           "when": "view == sonara.voice.log",
-          "group": "navigation@2"
+          "group": "1_actions@1"
         },
         {
           "command": "sonara.voice.clearProjectLog",
           "when": "view == sonara.voice.log",
-          "group": "navigation@3"
+          "group": "1_actions@2"
         },
         {
           "command": "sonara.voice.log.refresh",
           "when": "view == sonara.voice.log",
-          "group": "navigation@4"
+          "group": "1_actions@3"
         },
         {
           "command": "sonara.voice.editVocabulary",
           "when": "view == sonara.voice.transcripts",
-          "group": "navigation@1"
+          "group": "1_actions@1"
         },
         {
           "command": "sonara.voice.transcribeFile",
           "when": "view == sonara.voice.transcripts",
-          "group": "navigation@2"
+          "group": "navigation@1"
         },
         {
           "command": "sonara.voice.transcripts.refresh",
           "when": "view == sonara.voice.transcripts",
-          "group": "navigation@3"
+          "group": "1_actions@2"
         }
       ],
       "commandPalette": [
