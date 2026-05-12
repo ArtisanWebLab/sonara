@@ -315,6 +315,7 @@ export const PANEL_STYLES = `
     color: var(--vscode-charts-green);
     background: color-mix(in srgb, var(--vscode-charts-green) 15%, transparent);
 }
+.filter-copy-md + .filter-copy-md { margin-left: 2px; }
 .filter-copy-md-icon { display: inline-flex; align-items: center; }
 .filter-copy-md-icon svg { width: 11px; height: 11px; display: block; }
 .filter-copy-md.copied { color: var(--vscode-charts-green); }
@@ -333,6 +334,7 @@ export const PANEL_STYLES = `
     transition: opacity 0.1s, background 0.1s;
 }
 .section-copy-md.section-copy-md-alone { margin-left: auto; }
+.section-copy-md + .section-copy-md { margin-left: 2px; }
 .section-header:hover .section-copy-md { opacity: 0.8; }
 .section-copy-md:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground); }
 .section-copy-md svg { width: 13px; height: 13px; display: block; }

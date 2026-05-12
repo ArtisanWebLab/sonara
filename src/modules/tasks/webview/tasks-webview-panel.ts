@@ -39,8 +39,10 @@ type IncomingMessage =
     | { type: 'openFilterPicker'; kind: 'priority' | 'sprint' | 'label' }
     | { type: 'toggleFilterValue'; kind: 'priority' | 'sprint' | 'label'; value: string }
     | { type: 'clearFilters' }
-    | { type: 'copyAllAsMarkdown' }
-    | { type: 'copySectionAsMarkdown'; sectionId: string };
+    | { type: 'copyAllAsMarkdown'; mode: 'summary' | 'full' }
+    | { type: 'copySectionAsMarkdown'; sectionId: string; mode: 'summary' | 'full' };
+
+type CopyMarkdownMode = 'summary' | 'full';
 
 interface TaskFilters {
     priorities: TaskPriority[];
@@ -202,15 +204,15 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
                 this.pushState();
                 return;
             case 'copyAllAsMarkdown':
-                await this.handleCopyMarkdown(null);
+                await this.handleCopyMarkdown(null, msg.mode);
                 return;
             case 'copySectionAsMarkdown':
-                await this.handleCopyMarkdown(msg.sectionId);
+                await this.handleCopyMarkdown(msg.sectionId, msg.mode);
                 return;
         }
     }
 
-    private async handleCopyMarkdown(sectionId: string | null): Promise<void> {
+    private async handleCopyMarkdown(sectionId: string | null, mode: CopyMarkdownMode): Promise<void> {
         const allTasks = this.collectTaskDtos();
         const filtered = this.applyFilters(allTasks, this.getSanitizedFilters());
         const meta = {
@@ -219,20 +221,40 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
             priorityLabels: PRIORITY_LABELS,
             priorityRank: PRIORITY_RANK,
         };
-        let markdown: string;
-        if (sectionId === null) {
-            markdown = buildTasksMarkdown(filtered, meta);
-            this.view?.webview.postMessage({ type: 'copiedMarkdown', scope: 'all' });
-        } else {
-            const onlyStatus: TaskStatus | null =
-                sectionId === NO_STATUS_SECTION_ID ? null : (sectionId as TaskStatus);
-            markdown = buildTasksMarkdown(filtered, meta, { onlyStatus });
-            this.view?.webview.postMessage({ type: 'copiedMarkdown', scope: 'section', sectionId });
-        }
+        const onlyStatus: TaskStatus | null | undefined =
+            sectionId === null ? undefined : sectionId === NO_STATUS_SECTION_ID ? null : (sectionId as TaskStatus);
+
+        const enriched = await this.loadRawContents(filtered);
+        const markdown =
+            onlyStatus === undefined
+                ? buildTasksMarkdown(enriched, meta, { mode })
+                : buildTasksMarkdown(enriched, meta, { mode, onlyStatus });
+
         await vscode.env.clipboard.writeText(markdown);
+
+        if (sectionId === null) {
+            this.view?.webview.postMessage({ type: 'copiedMarkdown', scope: 'all', mode });
+        } else {
+            this.view?.webview.postMessage({ type: 'copiedMarkdown', scope: 'section', mode, sectionId });
+        }
+    }
+
+    private async loadRawContents(tasks: readonly MarkdownTaskDto[]): Promise<MarkdownTaskDto[]> {
+        const reads = tasks.map(async (t): Promise<MarkdownTaskDto> => {
+            const uri = this.store.getUriByPath(t.id);
+            if (!uri) return t;
+            try {
+                const bytes = await vscode.workspace.fs.readFile(uri);
+                return { ...t, rawContent: new TextDecoder('utf-8').decode(bytes) };
+            } catch {
+                return t;
+            }
+        });
+        return Promise.all(reads);
     }
 
     private collectTaskDtos(): MarkdownTaskDto[] {
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
         const result: MarkdownTaskDto[] = [];
         for (const entry of this.store.getEntries()) {
             if (entry.kind !== 'task') continue;
@@ -245,6 +267,8 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
                 sprint: t.sprint,
                 labels: t.labels,
                 summary: t.summary,
+                relativePath: toRelativePath(t.fileUri.fsPath, workspaceRoot),
+                rawContent: null,
             });
         }
         return result;
@@ -493,6 +517,20 @@ function taskToDto(task: Task): TaskDto {
         summary: task.summary,
         body: task.body,
     };
+}
+
+function toRelativePath(fsPath: string, workspaceRoot: vscode.Uri | undefined): string {
+    let rel = fsPath;
+    if (workspaceRoot) {
+        const rootPath = workspaceRoot.fsPath;
+        if (fsPath.startsWith(rootPath)) {
+            rel = fsPath.substring(rootPath.length);
+            if (rel.startsWith('/') || rel.startsWith('\\')) {
+                rel = rel.substring(1);
+            }
+        }
+    }
+    return rel.replace(/\\/g, '/');
 }
 
 function errorToDto(error: TaskParseError): ErrorDto {

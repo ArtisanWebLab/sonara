@@ -1,5 +1,7 @@
 import { TaskPriority, TaskStatus } from '../types';
 
+export type CopyMarkdownMode = 'full' | 'summary';
+
 export interface MarkdownTaskDto {
     id: string;
     title: string;
@@ -8,6 +10,8 @@ export interface MarkdownTaskDto {
     sprint: string | null;
     labels: string[];
     summary: string;
+    relativePath: string;
+    rawContent: string | null;
 }
 
 export interface MarkdownMetaDto {
@@ -18,16 +22,14 @@ export interface MarkdownMetaDto {
 }
 
 export interface BuildMarkdownOptions {
+    mode: CopyMarkdownMode;
     onlyStatus?: TaskStatus | null;
 }
-
-const NO_STATUS_LABEL = 'No Status';
-const TABLE_HEADER = '| Title | Priority | Sprint | Labels | Summary |\n|---|---|---|---|---|';
 
 export function buildTasksMarkdown(
     tasks: readonly MarkdownTaskDto[],
     meta: MarkdownMetaDto,
-    options: BuildMarkdownOptions = {},
+    options: BuildMarkdownOptions,
 ): string {
     const onlyStatusSpecified = 'onlyStatus' in options;
     const onlyStatus = options.onlyStatus;
@@ -36,25 +38,17 @@ export function buildTasksMarkdown(
         ? tasks.filter(t => t.status === onlyStatus)
         : tasks.slice();
 
-    const sections: string[] = [];
-
+    const ordered: MarkdownTaskDto[] = [];
     if (onlyStatusSpecified) {
-        const label = onlyStatus == null ? NO_STATUS_LABEL : (meta.statusLabels[onlyStatus] ?? onlyStatus);
-        const sorted = filtered.slice().sort(byPriority(meta));
-        const block = renderSection(label, sorted);
-        if (block) sections.push(block);
+        ordered.push(...filtered.slice().sort(byPriority(meta)));
     } else {
         for (const status of meta.statuses) {
-            const list = filtered.filter(t => t.status === status).sort(byPriority(meta));
-            const block = renderSection(meta.statusLabels[status] ?? status, list);
-            if (block) sections.push(block);
+            ordered.push(...filtered.filter(t => t.status === status).sort(byPriority(meta)));
         }
-        const noStatusList = filtered.filter(t => t.status === null).sort(byPriority(meta));
-        const noStatusBlock = renderSection(NO_STATUS_LABEL, noStatusList);
-        if (noStatusBlock) sections.push(noStatusBlock);
+        ordered.push(...filtered.filter(t => t.status === null).sort(byPriority(meta)));
     }
 
-    return sections.join('\n\n');
+    return ordered.map(task => renderTask(task, options.mode)).join('\n\n');
 }
 
 function byPriority(meta: MarkdownMetaDto): (a: MarkdownTaskDto, b: MarkdownTaskDto) => number {
@@ -66,24 +60,56 @@ function byPriority(meta: MarkdownMetaDto): (a: MarkdownTaskDto, b: MarkdownTask
     };
 }
 
-function renderSection(label: string, tasks: readonly MarkdownTaskDto[]): string {
-    if (tasks.length === 0) return '';
-    const rows = tasks.map(renderRow).join('\n');
-    return `## ${label}\n\n${TABLE_HEADER}\n${rows}`;
+function renderTask(task: MarkdownTaskDto, mode: CopyMarkdownMode): string {
+    const body = buildTaskBody(task, mode);
+    return `>>> TASK: ${task.relativePath}\n\n${body}\n\n<<< END TASK`;
 }
 
-function renderRow(task: MarkdownTaskDto): string {
-    const title = escapeCell(task.title);
-    const priority = escapeCell(task.priority);
-    const sprint = escapeCell(task.sprint ?? '');
-    const labels = escapeCell((task.labels ?? []).join(', '));
-    const summary = escapeCell(task.summary ?? '');
-    return `| ${title} | ${priority} | ${sprint} | ${labels} | ${summary} |`;
+function buildTaskBody(task: MarkdownTaskDto, mode: CopyMarkdownMode): string {
+    if (task.rawContent === null) {
+        return `> [File not accessible: ${task.relativePath}]`;
+    }
+    const parts = splitFrontmatter(task.rawContent);
+    if (!parts) return task.rawContent.trim();
+    const { frontmatter, body } = parts;
+    if (mode === 'full') {
+        const tail = body.replace(/^\s+/, '').replace(/\s+$/, '');
+        const head = frontmatter.replace(/\s+$/, '');
+        return tail ? `${head}\n\n${tail}` : head;
+    }
+    const head = frontmatter.replace(/\s+$/, '');
+    if (/^summary:\s*\S/m.test(frontmatter)) return head;
+    const firstParagraph = extractFirstParagraph(body);
+    return firstParagraph ? `${head}\n\n${firstParagraph}` : head;
 }
 
-function escapeCell(value: string): string {
-    return String(value)
-        .replace(/\r\n|\r|\n/g, ' ')
-        .replace(/\|/g, '\\|')
-        .trim();
+function splitFrontmatter(raw: string): { frontmatter: string; body: string } | null {
+    const text = raw.replace(/^﻿/, '');
+    const openMatch = text.match(/(^|\r?\n)---\s*\r?\n/);
+    if (!openMatch || openMatch.index === undefined) return null;
+    const openOffset = openMatch.index + openMatch[1].length;
+    const rest = text.slice(openOffset);
+    const afterOpen = rest.slice(rest.indexOf('\n') + 1);
+    const closeMatch = afterOpen.match(/(^|\r?\n)---\s*(?:\r?\n|$)/);
+    if (!closeMatch || closeMatch.index === undefined) return null;
+    const afterOpenStart = rest.indexOf('\n') + 1;
+    const frontmatterEnd = afterOpenStart + closeMatch.index + closeMatch[0].length;
+    const frontmatter = rest.slice(0, frontmatterEnd);
+    const body = rest.slice(frontmatterEnd);
+    return { frontmatter, body };
+}
+
+function extractFirstParagraph(body: string): string {
+    const trimmed = body.replace(/^\s*\r?\n/, '');
+    if (!trimmed) return '';
+    const lines = trimmed.split(/\r?\n/);
+    const collected: string[] = [];
+    for (const line of lines) {
+        if (line.trim() === '') {
+            if (collected.length > 0) break;
+            continue;
+        }
+        collected.push(line);
+    }
+    return collected.join('\n').trim();
 }

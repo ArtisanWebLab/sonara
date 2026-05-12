@@ -46,10 +46,13 @@ Free-form markdown body.
 | \`priority\` | no | default \`medium\` |
 | \`sprint\` | no | free string (e.g. \`2026-W19\`, \`sprint-12\`, \`release-0.3\`); one per task |
 | \`labels\` | no | array of free strings (epics or tags); auto-aggregated across tasks |
+| \`summary\` | no | 1-2 sentence description used in the task list and in summary exports; if omitted, the first paragraph of the body is used as fallback |
 | \`created\` | yes | ISO, set automatically |
 | \`updated\` | no | ISO, update on every change |
 
 Unknown fields are preserved as-is.
+
+When the body starts with a checklist or a heading, or is longer than a paragraph, set \`summary\` explicitly so the task list shows a meaningful description.
 
 ## Workflow
 

@@ -67,7 +67,10 @@ export async function parseTaskFile(fileUri: vscode.Uri): Promise<TaskEntry> {
         : [];
 
     const body = parsed.content.trim();
-    const summary = buildSummary(body);
+    const summaryRaw = data.summary;
+    const summary = typeof summaryRaw === 'string' && summaryRaw.trim() !== ''
+        ? summaryRaw.trim()
+        : buildSummary(body);
 
     const task: Task = {
         fileUri,

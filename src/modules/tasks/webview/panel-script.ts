@@ -63,7 +63,8 @@ ${buildIconsScriptDecl()}
         if (sectionCopy) {
             e.stopPropagation();
             const sid = sectionCopy.dataset.sectionId;
-            if (sid) vscode.postMessage({ type: 'copySectionAsMarkdown', sectionId: sid });
+            const mode = sectionCopy.dataset.mode === 'full' ? 'full' : 'summary';
+            if (sid) vscode.postMessage({ type: 'copySectionAsMarkdown', sectionId: sid, mode: mode });
             return;
         }
         const sectionHeader = e.target.closest('.section-header');
@@ -114,7 +115,8 @@ ${buildIconsScriptDecl()}
     filterBar.addEventListener('click', function (e) {
         const copyAll = e.target.closest('.filter-copy-md');
         if (copyAll) {
-            vscode.postMessage({ type: 'copyAllAsMarkdown' });
+            const mode = copyAll.dataset.mode === 'full' ? 'full' : 'summary';
+            vscode.postMessage({ type: 'copyAllAsMarkdown', mode: mode });
             return;
         }
         const removeTarget = e.target.closest('[data-filter-remove]');
@@ -148,16 +150,17 @@ ${buildIconsScriptDecl()}
         } else if (msg.type === 'copied') {
             flashCopied(msg.id, msg.kind);
         } else if (msg.type === 'copiedMarkdown') {
-            flashCopiedMarkdown(msg.scope, msg.sectionId);
+            flashCopiedMarkdown(msg.scope, msg.mode, msg.sectionId);
         }
     });
 
-    function flashCopiedMarkdown(scope, sectionId) {
+    function flashCopiedMarkdown(scope, mode, sectionId) {
+        const safeMode = mode === 'full' ? 'full' : 'summary';
         let btn = null;
         if (scope === 'section' && sectionId) {
-            btn = root.querySelector('.section-copy-md[data-section-id="' + cssEscape(sectionId) + '"]');
+            btn = root.querySelector('.section-copy-md[data-section-id="' + cssEscape(sectionId) + '"][data-mode="' + safeMode + '"]');
         } else {
-            btn = filterBar.querySelector('.filter-copy-md');
+            btn = filterBar.querySelector('.filter-copy-md[data-mode="' + safeMode + '"]');
         }
         if (!btn) return;
         const iconHost = btn.querySelector('.filter-copy-md-icon') || btn;
@@ -271,14 +274,24 @@ ${buildIconsScriptDecl()}
             header.appendChild(add);
         }
         if (id !== 'errors') {
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'section-copy-md';
-            copyBtn.title = 'Copy these tasks as Markdown';
-            copyBtn.innerHTML = ICON_COPY;
-            copyBtn.dataset.iconOriginal = ICON_COPY;
-            copyBtn.dataset.sectionId = id;
-            if (!statusForAdd) copyBtn.classList.add('section-copy-md-alone');
-            header.appendChild(copyBtn);
+            const copySummaryBtn = document.createElement('button');
+            copySummaryBtn.className = 'section-copy-md';
+            copySummaryBtn.title = 'Copy these tasks as summary table';
+            copySummaryBtn.innerHTML = ICON_COPY;
+            copySummaryBtn.dataset.iconOriginal = ICON_COPY;
+            copySummaryBtn.dataset.sectionId = id;
+            copySummaryBtn.dataset.mode = 'summary';
+            if (!statusForAdd) copySummaryBtn.classList.add('section-copy-md-alone');
+            header.appendChild(copySummaryBtn);
+
+            const copyFullBtn = document.createElement('button');
+            copyFullBtn.className = 'section-copy-md';
+            copyFullBtn.title = 'Copy these tasks with full content';
+            copyFullBtn.innerHTML = ICON_COPY;
+            copyFullBtn.dataset.iconOriginal = ICON_COPY;
+            copyFullBtn.dataset.sectionId = id;
+            copyFullBtn.dataset.mode = 'full';
+            header.appendChild(copyFullBtn);
         }
         section.appendChild(header);
 
@@ -473,18 +486,8 @@ ${buildIconsScriptDecl()}
         actionsBreak.className = 'filter-actions-break';
         filterBar.appendChild(actionsBreak);
 
-        const copyMdBtn = document.createElement('button');
-        copyMdBtn.className = 'filter-copy-md';
-        copyMdBtn.title = 'Copy visible tasks as Markdown';
-        const copyLabel = document.createElement('span');
-        copyLabel.textContent = 'Copy as Markdown';
-        copyMdBtn.appendChild(copyLabel);
-        const copyIcon = document.createElement('span');
-        copyIcon.className = 'filter-copy-md-icon';
-        copyIcon.innerHTML = ICON_COPY;
-        copyMdBtn.appendChild(copyIcon);
-        copyMdBtn.dataset.iconOriginal = ICON_COPY;
-        filterBar.appendChild(copyMdBtn);
+        filterBar.appendChild(buildFilterCopyButton('summary', 'Copy summary', 'Copy visible tasks as summary table'));
+        filterBar.appendChild(buildFilterCopyButton('full', 'Copy full', 'Copy visible tasks with full content'));
 
         if ((f.priorities || []).length || (f.sprints || []).length || (f.labels || []).length) {
             const clear = document.createElement('button');
@@ -499,6 +502,22 @@ ${buildIconsScriptDecl()}
             clear.appendChild(icon);
             filterBar.appendChild(clear);
         }
+    }
+
+    function buildFilterCopyButton(mode, label, tooltip) {
+        const btn = document.createElement('button');
+        btn.className = 'filter-copy-md';
+        btn.title = tooltip;
+        btn.dataset.mode = mode;
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = label;
+        btn.appendChild(labelSpan);
+        const icon = document.createElement('span');
+        icon.className = 'filter-copy-md-icon';
+        icon.innerHTML = ICON_COPY;
+        btn.appendChild(icon);
+        btn.dataset.iconOriginal = ICON_COPY;
+        return btn;
     }
 
     function renderFilterGroup(kind, selected, placeholderName, buildChip) {
