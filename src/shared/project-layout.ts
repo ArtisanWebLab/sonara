@@ -65,4 +65,22 @@ export function ensureProjectStructure(folder: vscode.WorkspaceFolder): void {
     }
 }
 
+export function healSonaraProject(folder: vscode.WorkspaceFolder, tasksReadmeContent: string): void {
+    const root = sonaraRoot(folder);
+    if (!fs.existsSync(root)) return;
+
+    const rootReadme = path.join(root, ROOT_README_FILE);
+    if (!fs.existsSync(rootReadme)) {
+        fs.writeFileSync(rootReadme, ROOT_README_CONTENT, 'utf8');
+    }
+
+    const tasks = tasksDir(folder);
+    if (fs.existsSync(tasks)) {
+        const tasksReadme = path.join(tasks, ROOT_README_FILE);
+        if (!fs.existsSync(tasksReadme)) {
+            fs.writeFileSync(tasksReadme, tasksReadmeContent, 'utf8');
+        }
+    }
+}
+
 export { ensureDir };
