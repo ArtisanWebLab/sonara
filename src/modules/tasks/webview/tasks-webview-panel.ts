@@ -268,6 +268,15 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
 
     private async handleOpenFilterPicker(kind: 'priority' | 'sprint' | 'label'): Promise<void> {
         const current = this.getFilters();
+        const otherFilters: TaskFilters = {
+            priorities: kind === 'priority' ? [] : current.priorities,
+            sprints: kind === 'sprint' ? [] : current.sprints,
+            labels: kind === 'label' ? [] : current.labels,
+        };
+        const candidatePool = this.applyFilters(this.collectTaskDtos(), otherFilters);
+        const countFor = (predicate: (t: MarkdownTaskDto) => boolean): number =>
+            candidatePool.reduce((n, t) => n + (predicate(t) ? 1 : 0), 0);
+
         let items: vscode.QuickPickItem[];
         let title: string;
         let selectedValues: string[];
@@ -276,17 +285,30 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
             allValues = [...PRIORITIES];
             selectedValues = current.priorities;
             title = 'Filter by Priority';
-            items = allValues.map(v => ({ label: PRIORITY_LABELS[v as TaskPriority], description: v, picked: selectedValues.includes(v) }));
+            items = allValues.map(v => {
+                const count = countFor(t => t.priority === v);
+                return {
+                    label: `${PRIORITY_LABELS[v as TaskPriority]} (${count})`,
+                    description: v,
+                    picked: selectedValues.includes(v),
+                };
+            });
         } else if (kind === 'sprint') {
             allValues = this.getAvailableSprints();
             selectedValues = current.sprints;
             title = 'Filter by Sprint';
-            items = allValues.map(v => ({ label: v, picked: selectedValues.includes(v) }));
+            items = allValues.map(v => {
+                const count = countFor(t => t.sprint === v);
+                return { label: `${v} (${count})`, description: v, picked: selectedValues.includes(v) };
+            });
         } else {
             allValues = this.getAvailableLabels();
             selectedValues = current.labels;
             title = 'Filter by Labels';
-            items = allValues.map(v => ({ label: v, picked: selectedValues.includes(v) }));
+            items = allValues.map(v => {
+                const count = countFor(t => Array.isArray(t.labels) && t.labels.includes(v));
+                return { label: `${v} (${count})`, description: v, picked: selectedValues.includes(v) };
+            });
         }
         if (items.length === 0) {
             await vscode.window.showInformationMessage(`No ${kind} values available.`);
@@ -294,7 +316,7 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
         }
         const picked = await vscode.window.showQuickPick(items, { canPickMany: true, title });
         if (!picked) return;
-        const pickedValues = picked.map(it => kind === 'priority' ? (it.description as string) : it.label);
+        const pickedValues = picked.map(it => it.description as string);
         const next: TaskFilters = { ...current };
         if (kind === 'priority') next.priorities = pickedValues as TaskPriority[];
         else if (kind === 'sprint') next.sprints = pickedValues;
