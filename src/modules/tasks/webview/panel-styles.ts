@@ -273,8 +273,8 @@ export const PANEL_STYLES = `
     opacity: 1;
     background: color-mix(in srgb, currentColor 20%, transparent);
 }
+.filter-actions-break { flex-basis: 100%; height: 0; }
 .filter-clear {
-    margin-left: auto;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -295,4 +295,46 @@ export const PANEL_STYLES = `
 }
 .filter-clear-icon { display: inline-flex; align-items: center; }
 .filter-clear-icon svg { display: block; }
+
+.filter-copy-md {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 18px;
+    padding: 0 7px;
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+}
+.filter-copy-md:hover {
+    color: var(--vscode-charts-green);
+    background: color-mix(in srgb, var(--vscode-charts-green) 15%, transparent);
+}
+.filter-copy-md-icon { display: inline-flex; align-items: center; }
+.filter-copy-md-icon svg { width: 11px; height: 11px; display: block; }
+.filter-copy-md.copied { color: var(--vscode-charts-green); }
+
+.section-copy-md {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: var(--vscode-icon-foreground);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.1s, background 0.1s;
+}
+.section-copy-md.section-copy-md-alone { margin-left: auto; }
+.section-header:hover .section-copy-md { opacity: 0.8; }
+.section-copy-md:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground); }
+.section-copy-md svg { width: 13px; height: 13px; display: block; }
+.section-copy-md.copied { color: var(--vscode-charts-green); opacity: 1; }
 `;

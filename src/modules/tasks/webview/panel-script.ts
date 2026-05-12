@@ -59,6 +59,13 @@ ${buildIconsScriptDecl()}
             if (status) vscode.postMessage({ type: 'newTask', status });
             return;
         }
+        const sectionCopy = e.target.closest('.section-copy-md');
+        if (sectionCopy) {
+            e.stopPropagation();
+            const sid = sectionCopy.dataset.sectionId;
+            if (sid) vscode.postMessage({ type: 'copySectionAsMarkdown', sectionId: sid });
+            return;
+        }
         const sectionHeader = e.target.closest('.section-header');
         if (sectionHeader) {
             const id = sectionHeader.dataset.sectionId;
@@ -105,6 +112,11 @@ ${buildIconsScriptDecl()}
     });
 
     filterBar.addEventListener('click', function (e) {
+        const copyAll = e.target.closest('.filter-copy-md');
+        if (copyAll) {
+            vscode.postMessage({ type: 'copyAllAsMarkdown' });
+            return;
+        }
         const removeTarget = e.target.closest('[data-filter-remove]');
         if (removeTarget) {
             vscode.postMessage({
@@ -135,8 +147,28 @@ ${buildIconsScriptDecl()}
             render();
         } else if (msg.type === 'copied') {
             flashCopied(msg.id, msg.kind);
+        } else if (msg.type === 'copiedMarkdown') {
+            flashCopiedMarkdown(msg.scope, msg.sectionId);
         }
     });
+
+    function flashCopiedMarkdown(scope, sectionId) {
+        let btn = null;
+        if (scope === 'section' && sectionId) {
+            btn = root.querySelector('.section-copy-md[data-section-id="' + cssEscape(sectionId) + '"]');
+        } else {
+            btn = filterBar.querySelector('.filter-copy-md');
+        }
+        if (!btn) return;
+        const iconHost = btn.querySelector('.filter-copy-md-icon') || btn;
+        const original = btn.dataset.iconOriginal || iconHost.innerHTML;
+        iconHost.innerHTML = ICON_COPIED;
+        btn.classList.add('copied');
+        setTimeout(function () {
+            iconHost.innerHTML = original;
+            btn.classList.remove('copied');
+        }, 1500);
+    }
 
     function render() {
         root.innerHTML = '';
@@ -237,6 +269,16 @@ ${buildIconsScriptDecl()}
             add.textContent = '+';
             add.dataset.status = statusForAdd;
             header.appendChild(add);
+        }
+        if (id !== 'errors') {
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'section-copy-md';
+            copyBtn.title = 'Copy these tasks as Markdown';
+            copyBtn.innerHTML = ICON_COPY;
+            copyBtn.dataset.iconOriginal = ICON_COPY;
+            copyBtn.dataset.sectionId = id;
+            if (!statusForAdd) copyBtn.classList.add('section-copy-md-alone');
+            header.appendChild(copyBtn);
         }
         section.appendChild(header);
 
@@ -390,11 +432,12 @@ ${buildIconsScriptDecl()}
             : '[data-id="' + escaped + '"] .icon-btn[data-copy-kind]';
         const btn = root.querySelector(selector);
         if (!btn) return;
-        const original = btn.dataset.iconOriginal || btn.innerHTML;
-        btn.innerHTML = ICON_COPIED;
+        const iconHost = btn.querySelector('.filter-copy-md-icon') || btn;
+        const original = btn.dataset.iconOriginal || iconHost.innerHTML;
+        iconHost.innerHTML = ICON_COPIED;
         btn.classList.add('copied');
         setTimeout(function () {
-            btn.innerHTML = original;
+            iconHost.innerHTML = original;
             btn.classList.remove('copied');
         }, 1500);
     }
@@ -425,6 +468,23 @@ ${buildIconsScriptDecl()}
             chip.textContent = v;
             return chip;
         });
+
+        const actionsBreak = document.createElement('span');
+        actionsBreak.className = 'filter-actions-break';
+        filterBar.appendChild(actionsBreak);
+
+        const copyMdBtn = document.createElement('button');
+        copyMdBtn.className = 'filter-copy-md';
+        copyMdBtn.title = 'Copy visible tasks as Markdown';
+        const copyLabel = document.createElement('span');
+        copyLabel.textContent = 'Copy as Markdown';
+        copyMdBtn.appendChild(copyLabel);
+        const copyIcon = document.createElement('span');
+        copyIcon.className = 'filter-copy-md-icon';
+        copyIcon.innerHTML = ICON_COPY;
+        copyMdBtn.appendChild(copyIcon);
+        copyMdBtn.dataset.iconOriginal = ICON_COPY;
+        filterBar.appendChild(copyMdBtn);
 
         if ((f.priorities || []).length || (f.sprints || []).length || (f.labels || []).length) {
             const clear = document.createElement('button');

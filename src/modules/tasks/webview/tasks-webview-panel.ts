@@ -13,6 +13,7 @@ import {
     TaskStatus,
 } from '../types';
 import { buildPanelHtml } from './panel-html';
+import { buildTasksMarkdown, MarkdownTaskDto } from './markdown-export';
 import { ensureTasksFolder } from '../commands/ensure-tasks-folder';
 import { executeNewTask } from '../commands/new-task-command';
 import { executeChangeSprint } from '../commands/change-sprint-command';
@@ -37,7 +38,9 @@ type IncomingMessage =
     | { type: 'toggleSection'; sectionId: string; collapsed: boolean }
     | { type: 'openFilterPicker'; kind: 'priority' | 'sprint' | 'label' }
     | { type: 'toggleFilterValue'; kind: 'priority' | 'sprint' | 'label'; value: string }
-    | { type: 'clearFilters' };
+    | { type: 'clearFilters' }
+    | { type: 'copyAllAsMarkdown' }
+    | { type: 'copySectionAsMarkdown'; sectionId: string };
 
 interface TaskFilters {
     priorities: TaskPriority[];
@@ -198,7 +201,69 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
                 await this.memento.update(FILTERS_KEY, DEFAULT_FILTERS);
                 this.pushState();
                 return;
+            case 'copyAllAsMarkdown':
+                await this.handleCopyMarkdown(null);
+                return;
+            case 'copySectionAsMarkdown':
+                await this.handleCopyMarkdown(msg.sectionId);
+                return;
         }
+    }
+
+    private async handleCopyMarkdown(sectionId: string | null): Promise<void> {
+        const allTasks = this.collectTaskDtos();
+        const filtered = this.applyFilters(allTasks, this.getSanitizedFilters());
+        const meta = {
+            statuses: STATUSES,
+            statusLabels: STATUS_LABELS,
+            priorityLabels: PRIORITY_LABELS,
+            priorityRank: PRIORITY_RANK,
+        };
+        let markdown: string;
+        if (sectionId === null) {
+            markdown = buildTasksMarkdown(filtered, meta);
+            this.view?.webview.postMessage({ type: 'copiedMarkdown', scope: 'all' });
+        } else {
+            const onlyStatus: TaskStatus | null =
+                sectionId === NO_STATUS_SECTION_ID ? null : (sectionId as TaskStatus);
+            markdown = buildTasksMarkdown(filtered, meta, { onlyStatus });
+            this.view?.webview.postMessage({ type: 'copiedMarkdown', scope: 'section', sectionId });
+        }
+        await vscode.env.clipboard.writeText(markdown);
+    }
+
+    private collectTaskDtos(): MarkdownTaskDto[] {
+        const result: MarkdownTaskDto[] = [];
+        for (const entry of this.store.getEntries()) {
+            if (entry.kind !== 'task') continue;
+            const t = entry.task;
+            result.push({
+                id: t.fileUri.fsPath,
+                title: t.title,
+                status: t.status,
+                priority: t.priority,
+                sprint: t.sprint,
+                labels: t.labels,
+                summary: t.summary,
+            });
+        }
+        return result;
+    }
+
+    private applyFilters(tasks: MarkdownTaskDto[], filters: TaskFilters): MarkdownTaskDto[] {
+        const hasP = filters.priorities.length > 0;
+        const hasS = filters.sprints.length > 0;
+        const hasL = filters.labels.length > 0;
+        if (!hasP && !hasS && !hasL) return tasks;
+        return tasks.filter(t => {
+            if (hasP && !filters.priorities.includes(t.priority)) return false;
+            if (hasS && (!t.sprint || !filters.sprints.includes(t.sprint))) return false;
+            if (hasL) {
+                if (!t.labels || t.labels.length === 0) return false;
+                if (!t.labels.some(l => filters.labels.includes(l))) return false;
+            }
+            return true;
+        });
     }
 
     private async handleOpenFilterPicker(kind: 'priority' | 'sprint' | 'label'): Promise<void> {
