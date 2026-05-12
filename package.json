@@ -33,6 +33,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "sonara.tasks.copyAgentContext",
+        "title": "Copy Agent Context",
+        "category": "Sonara",
+        "icon": "$(link)"
+      },
+      {
         "command": "sonara.tasks.refresh",
         "title": "Refresh",
         "category": "Sonara",
@@ -204,9 +210,14 @@
           "group": "navigation@1"
         },
         {
-          "command": "sonara.tasks.refresh",
+          "command": "sonara.tasks.copyAgentContext",
           "when": "view == sonara.tasks",
           "group": "navigation@2"
+        },
+        {
+          "command": "sonara.tasks.refresh",
+          "when": "view == sonara.tasks",
+          "group": "navigation@3"
         },
         {
           "command": "sonara.voice.toggleShowAll.expand",

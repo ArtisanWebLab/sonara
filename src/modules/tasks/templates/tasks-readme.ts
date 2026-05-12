@@ -2,6 +2,10 @@ export const TASKS_README_CONTENT = `# Tasks
 
 Project task list. Each file is one task: YAML frontmatter + free-form markdown body. Files are committed with the repo.
 
+## Multi-root workspaces
+
+Each project in a multi-root workspace has its own \`.vscode/sonara/tasks/\` folder. Tasks are NOT shared between projects. If the user does not specify which project a new task belongs to, ASK them before creating the file - never guess.
+
 ## File layout
 
 A task file has three sections in this exact order:

@@ -4,6 +4,7 @@ import { TasksWebviewPanel } from './webview/tasks-webview-panel';
 import { executeNewTask } from './commands/new-task-command';
 import { executeRefresh } from './commands/refresh-command';
 import { executeCreateTasksFolder } from './commands/create-tasks-folder-command';
+import { executeCopyAgentContext } from './commands/copy-agent-context-command';
 import { ActiveProject } from '../../shared/active-project';
 
 export async function registerTasksModule(
@@ -23,6 +24,7 @@ export async function registerTasksModule(
 
     context.subscriptions.push(
         vscode.commands.registerCommand('sonara.tasks.new', () => executeNewTask(store)),
+        vscode.commands.registerCommand('sonara.tasks.copyAgentContext', () => executeCopyAgentContext(activeProject)),
         vscode.commands.registerCommand('sonara.tasks.refresh', () => executeRefresh(store)),
         vscode.commands.registerCommand('sonara.tasks.init', () => executeCreateTasksFolder(store)),
     );
