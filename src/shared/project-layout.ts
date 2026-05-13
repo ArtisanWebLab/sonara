@@ -26,7 +26,8 @@ If your workspace has multiple folders, switch between them using the Active Pro
 
 ## For AI agents
 
-Before creating, modifying, or closing any task in \`tasks/\`, read \`tasks/README.md\` for the file format, workflow, and rules. Every task file also starts with an HTML comment pointing to it.
+- Before creating, modifying, or closing any task in \`tasks/\`, read \`tasks/README.md\` for the file format and rules.
+- \`voice-log/vocabulary.md\` biases Whisper dictation across the whole project (voice-log, voice-transcripts, dictated task input). One term per line; \`#\` lines are comments. When the user corrects a misrecognized term, propose adding it. Write to the file only on explicit confirmation.
 `;
 
 export function sonaraRoot(folder: vscode.WorkspaceFolder): string {

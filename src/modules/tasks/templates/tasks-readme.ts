@@ -1,22 +1,12 @@
 export const TASKS_README_CONTENT = `# Tasks
 
-Project task list. Each file is one task: YAML frontmatter + free-form markdown body. Files are committed with the repo.
+Each file is one task. Files are committed with the repo.
 
-## Multi-root workspaces
-
-Each project in a multi-root workspace has its own \`.vscode/sonara/tasks/\` folder. Tasks are NOT shared between projects. If the user does not specify which project a new task belongs to, ASK them before creating the file - never guess.
+In a multi-root workspace, each project has its own \`.vscode/sonara/tasks/\` folder - tasks are NOT shared. If the user does not specify which project a new task belongs to, ASK.
 
 ## File layout
 
-A task file has three sections in this exact order:
-
-1. **HTML comment marker** (line 1, mandatory) - tells humans and tools this is a Sonara task
-2. **YAML frontmatter** - metadata block fenced with \`---\`
-3. **Markdown body** - free-form description
-
 \`\`\`markdown
-<!-- Sonara task. Format and rules: .vscode/sonara/tasks/README.md -->
-
 ---
 title: Short task title
 status: inbox
@@ -28,15 +18,14 @@ created: 2026-04-27T12:00:00.000Z
 updated: 2026-04-27T12:00:00.000Z
 ---
 
+<!-- Sonara task. Format and rules: .vscode/sonara/tasks/README.md -->
+
 Free-form markdown body.
 \`\`\`
 
-**Spacing rules:**
-- One blank line between the HTML comment and the opening \`---\`
-- One blank line between the closing \`---\` and the body
-- No leading whitespace before the HTML comment (it must be on line 1)
-
-**Filename:** \`kebab-case\` derived from the title, \`.md\` extension. Example: \`fix-race-condition-in-webhook-queue.md\`. The file lives directly in \`.vscode/sonara/tasks/\` (no subfolders).
+- Frontmatter must start on line 1 (no leading whitespace or comments).
+- One blank line between the closing \`---\`, the HTML comment, and the body.
+- Filename: \`kebab-case\` derived from the title, \`.md\` extension. File lives directly in \`.vscode/sonara/tasks/\`.
 
 ## Frontmatter
 
@@ -45,55 +34,35 @@ Free-form markdown body.
 | \`title\` | yes | short title |
 | \`status\` | yes | see Workflow |
 | \`priority\` | no | default \`medium\` |
-| \`sprint\` | no | free string (e.g. \`2026-W19\`, \`sprint-12\`, \`release-0.3\`); one per task |
-| \`labels\` | no | array of free strings (epics or tags); auto-aggregated across tasks |
-| \`summary\` | no | 1-2 sentence description used in the task list and in summary exports; if omitted, the first paragraph of the body is used as fallback. **Always wrap the value in double quotes** (e.g. \`summary: "Fix race condition in webhook queue"\`) so colons, backticks, brackets, and other YAML-special characters in the text do not break parsing |
+| \`sprint\` | no | free string (\`2026-W19\`, \`sprint-12\`, \`release-0.3\`); one per task |
+| \`labels\` | no | array of free strings |
+| \`summary\` | no | 1-2 sentence description shown in the task list. **Always wrap in double quotes.** If omitted, the first paragraph of the body is used |
 | \`created\` | yes | ISO, set automatically |
 | \`updated\` | no | ISO, update on every change |
 
-Unknown fields are preserved as-is.
-
-When the body starts with a checklist or a heading, or is longer than a paragraph, set \`summary\` explicitly so the task list shows a meaningful description.
+Set \`summary\` explicitly when the body starts with a checklist or heading.
 
 ## Workflow
 
 \`inbox\` -> \`backlog\` -> \`todo\` -> \`in-progress\` -> \`review\` -> \`done\` -> \`archived\`
 
-- \`inbox\` - default entry point for every new task
-- \`backlog\` - long-term pile, collapsed by default
-- \`todo\` - selected for the current iteration
-- \`in-progress\` - active work
-- \`review\` - awaiting human verification
-- \`done\` - accepted, collapsed by default
-- \`archived\` - closed or cancelled, collapsed by default
-
 ## Priority
 
-\`highest\`, \`high\`, \`medium\`, \`low\`, \`lowest\` (most to least urgent). Sorted within a section by priority, then by \`created\`.
+\`highest\`, \`high\`, \`medium\`, \`low\`, \`lowest\`.
 
 ## Rules for AI agents
 
-- Default \`status\` for new tasks: \`inbox\`. Never put a new task straight into \`backlog\`/\`todo\`/further without being asked.
-- When merging or rewriting a task, set its \`status\` back to \`inbox\` and ask the user where it belongs now.
+- Default \`status\` for new tasks: \`inbox\`. Never put a new task straight into a later stage without being asked.
+- When merging or rewriting a task, reset \`status\` to \`inbox\` and ask the user where it belongs.
 - Update \`updated\` on every change.
-- Move through stages in order; skipping is allowed only when the user explicitly says so.
-- Never write directly to \`done\` or \`archived\` without going through \`review\`, unless the user explicitly skips it.
+- Move through stages in order. Never write directly to \`done\` or \`archived\` without going through \`review\`, unless the user explicitly skips it.
 - Cancelled work -> \`archived\` with a short reason in the body.
 - Don't modify other tasks without an explicit request.
-
-### Body structure
-
-Break the body into actionable checkboxes so progress is trackable:
-
-\`\`\`markdown
-- [ ] Do this
-- [ ] Check that
-\`\`\`
+- Write task bodies as actionable checklists (\`- [ ] ...\`) so progress is trackable.
 
 ### Closing a task
 
-Before changing status to \`done\` or \`archived\`:
-
-1. Mark each checklist item: \`- [x]\` for done, leave unchecked with an inline note for skipped (\`- [ ] X - skipped, no longer relevant\`).
-2. Append a 2-4 sentence completion summary at the bottom of the body.
+Before \`done\` or \`archived\`:
+1. Mark each checklist item: \`- [x]\` for done, leave unchecked with a note for skipped (\`- [ ] X - skipped, no longer relevant\`).
+2. Append a 2-4 sentence completion summary at the bottom.
 `;

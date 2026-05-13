@@ -33,7 +33,7 @@ export async function executeNewTask(store: TaskStore, initialStatus: TaskStatus
         priority: 'medium',
         created: new Date(),
     };
-    const content = TASK_FILE_HEADER + matter.stringify('\n', data);
+    const content = matter.stringify('\n' + TASK_FILE_HEADER, data);
     await atomicWrite(fileUri, content);
 
     const editor = await openInEditor(fileUri);
