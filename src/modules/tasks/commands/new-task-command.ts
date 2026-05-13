@@ -3,16 +3,15 @@ import matter from 'gray-matter';
 import { TaskStore } from '../store/task-store';
 import { atomicWrite, openInEditor } from '../../../shared/fs-utils';
 import { generateUniqueFilename } from '../file-system/path-utils';
-import { ensureTasksFolder } from './ensure-tasks-folder';
 import { TASK_FILE_HEADER } from '../templates/task-file-header';
 import { TaskStatus } from '../types';
 
 export async function executeNewTask(store: TaskStore, initialStatus: TaskStatus = 'inbox'): Promise<void> {
-    const ensured = await ensureTasksFolder(store);
-    if (!ensured) {
+    const tasksDir = store.getTasksDir();
+    if (!tasksDir) {
+        await vscode.window.showErrorMessage('Open a workspace folder first to manage tasks.');
         return;
     }
-    const tasksDir = ensured.tasksDir;
 
     const title = await vscode.window.showInputBox({
         prompt: 'Task title',

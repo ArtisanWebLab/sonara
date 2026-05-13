@@ -10,7 +10,7 @@ import {
 } from '../webview/voice-transcripts/transcript-formatter';
 import { formatDateTime, formatDuration } from '../../../shared/date-format';
 import { buildInitialPrompt, loadVocabularyFromFile } from '../webview/voice-log/vocabulary-store';
-import { transcriptsDir, vocabularyFile, ensureProjectStructure } from '../../../shared/project-layout';
+import { transcriptsDir, vocabularyFile, ensureSonaraProject } from '../../../shared/project-layout';
 import { atomicWrite, openInEditor } from '../../../shared/fs-utils';
 
 const MEDIA_FILTERS = {
@@ -45,7 +45,7 @@ export function registerTranscribeFileCommand(deps: CommandDeps): vscode.Disposa
         const sourcePath = picked[0].fsPath;
         const sourceName = path.basename(sourcePath);
 
-        ensureProjectStructure(folder);
+        ensureSonaraProject(folder);
         const outputDir = transcriptsDir(folder);
         const vocabulary = loadVocabularyFromFile(vocabularyFile(folder));
         const initialPrompt = buildInitialPrompt(vocabulary);

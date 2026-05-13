@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { ensureDir } from './fs-utils';
+import { TASKS_README_CONTENT } from '../modules/tasks/templates/tasks-readme';
 
 const SONARA_ROOT = '.vscode/sonara';
 
@@ -52,34 +53,21 @@ export function transcriptsDir(folder: vscode.WorkspaceFolder): string {
     return path.join(folder.uri.fsPath, VOICE_TRANSCRIPTS_FOLDER_NAME);
 }
 
-export function ensureProjectStructure(folder: vscode.WorkspaceFolder): void {
+export function ensureSonaraProject(folder: vscode.WorkspaceFolder): void {
     const root = sonaraRoot(folder);
     ensureDir(root);
     ensureDir(tasksDir(folder));
     ensureDir(voiceLogDir(folder));
     ensureDir(transcriptsDir(folder));
 
-    const readme = path.join(root, ROOT_README_FILE);
-    if (!fs.existsSync(readme)) {
-        fs.writeFileSync(readme, ROOT_README_CONTENT, 'utf8');
-    }
-}
-
-export function healSonaraProject(folder: vscode.WorkspaceFolder, tasksReadmeContent: string): void {
-    const root = sonaraRoot(folder);
-    if (!fs.existsSync(root)) return;
-
     const rootReadme = path.join(root, ROOT_README_FILE);
     if (!fs.existsSync(rootReadme)) {
         fs.writeFileSync(rootReadme, ROOT_README_CONTENT, 'utf8');
     }
 
-    const tasks = tasksDir(folder);
-    if (fs.existsSync(tasks)) {
-        const tasksReadme = path.join(tasks, ROOT_README_FILE);
-        if (!fs.existsSync(tasksReadme)) {
-            fs.writeFileSync(tasksReadme, tasksReadmeContent, 'utf8');
-        }
+    const tasksReadme = path.join(tasksDir(folder), ROOT_README_FILE);
+    if (!fs.existsSync(tasksReadme)) {
+        fs.writeFileSync(tasksReadme, TASKS_README_CONTENT, 'utf8');
     }
 }
 

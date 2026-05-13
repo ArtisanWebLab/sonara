@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import { ActiveProject } from './shared/active-project';
 import { registerActiveProjectPicker } from './shared/active-project-view';
-import { healSonaraProject } from './shared/project-layout';
-import { TASKS_README_CONTENT } from './modules/tasks/templates/tasks-readme';
+import { ensureSonaraProject } from './shared/project-layout';
 import { registerTasksModule } from './modules/tasks';
 import { registerVoiceModule } from './modules/voice';
 
@@ -13,12 +12,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const initial = activeProject.get();
     if (initial) {
-        healSonaraProject(initial, TASKS_README_CONTENT);
+        ensureSonaraProject(initial);
     }
     context.subscriptions.push(
         activeProject.onDidChange(folder => {
             if (folder) {
-                healSonaraProject(folder, TASKS_README_CONTENT);
+                ensureSonaraProject(folder);
             }
         }),
     );

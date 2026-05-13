@@ -14,7 +14,6 @@ import {
 } from '../types';
 import { buildPanelHtml } from './panel-html';
 import { buildTasksMarkdown, MarkdownTaskDto } from './markdown-export';
-import { ensureTasksFolder } from '../commands/ensure-tasks-folder';
 import { executeNewTask } from '../commands/new-task-command';
 import { executeChangeSprint } from '../commands/change-sprint-command';
 import { executeEditLabels } from '../commands/edit-labels-command';
@@ -24,7 +23,6 @@ import { executeChangePriority } from '../commands/change-priority-command';
 type IncomingMessage =
     | { type: 'ready' }
     | { type: 'refresh' }
-    | { type: 'initializeTasks' }
     | { type: 'newTask'; status: TaskStatus | null }
     | { type: 'openPreview'; id: string }
     | { type: 'openEditor'; id: string }
@@ -131,10 +129,6 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
             case 'ready':
             case 'refresh':
                 await this.store.rescan();
-                this.pushState();
-                return;
-            case 'initializeTasks':
-                await ensureTasksFolder(this.store);
                 this.pushState();
                 return;
             case 'newTask':

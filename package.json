@@ -45,11 +45,6 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "sonara.tasks.init",
-        "title": "Initialize for This Project",
-        "category": "Sonara"
-      },
-      {
         "command": "sonara.voice.startRecording",
         "title": "Start Recording",
         "category": "Sonara"

@@ -44,13 +44,6 @@ ${buildIconsScriptDecl()}
     // Single delegated click listener for the whole task list.
     // Survives any number of re-renders.
     root.addEventListener('click', function (e) {
-        // Welcome init button.
-        const initBtn = e.target.closest('[data-action="initializeTasks"]');
-        if (initBtn) {
-            vscode.postMessage({ type: 'initializeTasks' });
-            return;
-        }
-
         // Section header / section add.
         const sectionAdd = e.target.closest('.section-add');
         if (sectionAdd) {
@@ -213,10 +206,7 @@ ${buildIconsScriptDecl()}
     function renderWelcome() {
         const div = document.createElement('div');
         div.className = 'welcome';
-        div.innerHTML =
-            '<p>Sonara Tasks is not initialized for this project yet.</p>' +
-            '<p>Initialization creates a <code>.vscode/sonara/tasks/</code> folder, a <code>README.md</code> with instructions for AI agents, and a starter task.</p>' +
-            '<button class="welcome-btn" data-action="initializeTasks">Initialize Tasks for This Project</button>';
+        div.innerHTML = '<p>Open a workspace folder to use Sonara Tasks.</p>';
         root.appendChild(div);
     }
 

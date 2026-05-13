@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { CommandDeps } from './types';
 import { ensureVocabularyFile } from '../webview/voice-log/vocabulary-store';
-import { vocabularyFile, ensureProjectStructure } from '../../../shared/project-layout';
+import { vocabularyFile, ensureSonaraProject } from '../../../shared/project-layout';
 import { openInEditor } from '../../../shared/fs-utils';
 
 export function registerVocabularyCommands(deps: CommandDeps): void {
@@ -15,7 +15,7 @@ export function registerVocabularyCommands(deps: CommandDeps): void {
                 vscode.window.showInformationMessage('Open a folder to use voice features.');
                 return;
             }
-            ensureProjectStructure(folder);
+            ensureSonaraProject(folder);
             const filePath = ensureVocabularyFile(vocabularyFile(folder));
             await openInEditor(filePath);
         }),
