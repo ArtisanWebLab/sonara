@@ -106,11 +106,24 @@ function buildSummary(body: string): string {
     }
     const lines = body.split(/\r?\n/);
     const meaningful: string[] = [];
+    let insideHtmlComment = false;
     for (const line of lines) {
         const trimmed = line.trim();
+        if (insideHtmlComment) {
+            if (trimmed.includes('-->')) {
+                insideHtmlComment = false;
+            }
+            continue;
+        }
         if (!trimmed) {
             if (meaningful.length > 0) {
                 break;
+            }
+            continue;
+        }
+        if (trimmed.startsWith('<!--')) {
+            if (!trimmed.includes('-->')) {
+                insideHtmlComment = true;
             }
             continue;
         }
