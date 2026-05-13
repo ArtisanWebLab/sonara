@@ -90,10 +90,6 @@ ${buildIconsScriptDecl()}
             case 'copied':
                 flashCopied(msg.id);
                 break;
-            case 'focusSearch':
-                searchInput.focus();
-                searchInput.select();
-                break;
             case 'toggleShowAll':
                 showAll = !showAll;
                 renderRecords(allRecords);

@@ -11,7 +11,6 @@ type PanelMessage =
     | { type: 'edit'; id: string; text: string }
     | { type: 'search'; query: string }
     | { type: 'ready' }
-    | { type: 'focusSearch' }
     | { type: 'showAllState'; canToggle: boolean; showAll: boolean };
 
 export class VoiceLogPanel implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -90,10 +89,6 @@ export class VoiceLogPanel implements vscode.WebviewViewProvider, vscode.Disposa
         });
 
         this.refresh();
-    }
-
-    focusSearch(): void {
-        this.view?.webview.postMessage({ type: 'focusSearch' });
     }
 
     toggleShowAll(): void {

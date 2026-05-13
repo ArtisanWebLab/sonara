@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { VoiceRecord } from './types';
-import { formatTime, formatDuration, pad2 } from '../../../../shared/date-format';
 
 export type DraftMode = 'recording' | 'live' | 'transcribing';
 
@@ -113,29 +112,6 @@ export class LogStore implements vscode.Disposable {
         for (const record of existing) {
             this.onRecordDeletedEmitter.fire(record.id);
         }
-    }
-
-    async exportMarkdown(): Promise<string> {
-        const records = await this.list();
-        if (records.length === 0) {
-            return '# Voice Log\n\n*No records.*\n';
-        }
-
-        const lines = ['# Voice Log\n'];
-        let currentDate = '';
-
-        for (const r of records) {
-            const d = new Date(r.timestamp);
-            const dateStr = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-            if (dateStr !== currentDate) {
-                currentDate = dateStr;
-                lines.push(`\n## ${dateStr}\n`);
-            }
-            lines.push(`**${formatTime(d)}** (${r.language}, ${formatDuration(r.duration_sec)})`);
-            lines.push(`\n> ${r.text}\n`);
-        }
-
-        return lines.join('\n');
     }
 
     get recordCount(): number {

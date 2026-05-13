@@ -70,40 +70,10 @@
         "category": "Sonara"
       },
       {
-        "command": "sonara.voice.copyLastTranscription",
-        "title": "Copy Last Transcription",
-        "category": "Sonara"
-      },
-      {
-        "command": "sonara.voice.searchLog",
-        "title": "Search Log",
-        "category": "Sonara"
-      },
-      {
         "command": "sonara.voice.clearProjectLog",
         "title": "Clear Project Log",
         "category": "Sonara",
         "icon": "$(trash)"
-      },
-      {
-        "command": "sonara.voice.exportLogMarkdown",
-        "title": "Export Log as Markdown",
-        "category": "Sonara"
-      },
-      {
-        "command": "sonara.voice.openLogFile",
-        "title": "Open Log File",
-        "category": "Sonara"
-      },
-      {
-        "command": "sonara.voice.openStorageFolder",
-        "title": "Open Project Storage Folder",
-        "category": "Sonara"
-      },
-      {
-        "command": "sonara.voice.openGlobalStorageFolder",
-        "title": "Open Global Storage Folder",
-        "category": "Sonara"
       },
       {
         "command": "sonara.voice.changeModel",
@@ -141,20 +111,10 @@
         "category": "Sonara"
       },
       {
-        "command": "sonara.voice.resetExtension",
-        "title": "Reset Extension",
-        "category": "Sonara"
-      },
-      {
         "command": "sonara.voice.transcribeFile",
         "title": "Transcribe File...",
         "category": "Sonara",
         "icon": "$(new-file)"
-      },
-      {
-        "command": "sonara.voice.showTranscripts",
-        "title": "Show Transcripts",
-        "category": "Sonara"
       },
       {
         "command": "sonara.voice.toggleStreamingMode",

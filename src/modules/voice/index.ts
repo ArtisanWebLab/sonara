@@ -15,7 +15,6 @@ import { registerLogCommands } from './commands/log-commands';
 import { registerModelCommands } from './commands/model-commands';
 import { registerServerCommands } from './commands/server-commands';
 import { registerTranscribeFileCommand } from './commands/transcribe-file-command';
-import { registerStorageCommands } from './commands/storage-commands';
 import { registerVocabularyCommands } from './commands/vocabulary-commands';
 import { createTimestampedOutputChannel } from '../../shared/timestamped-channel';
 import { ActiveProject } from '../../shared/active-project';
@@ -132,13 +131,9 @@ export async function registerVoiceModule(
     registerLogCommands(deps);
     registerModelCommands(deps);
     registerServerCommands(deps);
-    registerStorageCommands(deps);
     registerVocabularyCommands(deps);
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('sonara.voice.showTranscripts', () => {
-            vscode.commands.executeCommand('sonara.voice.transcripts.focus');
-        }),
         vscode.commands.registerCommand('sonara.voice.log.refresh', () => voiceLogPanel.forceRefresh()),
         vscode.commands.registerCommand('sonara.voice.transcripts.refresh', () => voiceTranscriptsPanel.forceRefresh()),
         registerTranscribeFileCommand(deps),
