@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { ensureDir } from './fs-utils';
 import { TASKS_README_CONTENT } from '../modules/tasks/templates/tasks-readme';
+import { VOCABULARY_TEMPLATE } from '../modules/voice/templates/vocabulary-template';
 
 const SONARA_ROOT = '.vscode/sonara';
 
@@ -27,7 +28,7 @@ If your workspace has multiple folders, switch between them using the Active Pro
 ## For AI agents
 
 - Before creating, modifying, or closing any task in \`tasks/\`, read \`tasks/README.md\` for the file format and rules.
-- \`voice-log/vocabulary.md\` biases Whisper dictation across the whole project (voice-log, voice-transcripts, dictated task input). One term per line; \`#\` lines are comments. When the user corrects a misrecognized term, propose adding it. Write to the file only on explicit confirmation.
+- \`vocabulary.md\` biases Whisper dictation across the whole project (voice-log, voice-transcripts, dictated task input). One term per line; \`#\` lines are comments. When the user corrects a misrecognized term, propose adding it. Write to the file only on explicit confirmation.
 `;
 
 export function sonaraRoot(folder: vscode.WorkspaceFolder): string {
@@ -47,28 +48,34 @@ export function voiceLogFile(folder: vscode.WorkspaceFolder): string {
 }
 
 export function vocabularyFile(folder: vscode.WorkspaceFolder): string {
-    return path.join(voiceLogDir(folder), 'vocabulary.md');
+    return path.join(sonaraRoot(folder), 'vocabulary.md');
 }
 
 export function transcriptsDir(folder: vscode.WorkspaceFolder): string {
     return path.join(folder.uri.fsPath, VOICE_TRANSCRIPTS_FOLDER_NAME);
 }
 
+interface SeedFile {
+    path: string;
+    content: string;
+}
+
 export function ensureSonaraProject(folder: vscode.WorkspaceFolder): void {
-    const root = sonaraRoot(folder);
-    ensureDir(root);
+    ensureDir(sonaraRoot(folder));
     ensureDir(tasksDir(folder));
     ensureDir(voiceLogDir(folder));
     ensureDir(transcriptsDir(folder));
 
-    const rootReadme = path.join(root, ROOT_README_FILE);
-    if (!fs.existsSync(rootReadme)) {
-        fs.writeFileSync(rootReadme, ROOT_README_CONTENT, 'utf8');
-    }
+    const seeds: SeedFile[] = [
+        { path: path.join(sonaraRoot(folder), ROOT_README_FILE), content: ROOT_README_CONTENT },
+        { path: path.join(tasksDir(folder), ROOT_README_FILE), content: TASKS_README_CONTENT },
+        { path: vocabularyFile(folder), content: VOCABULARY_TEMPLATE },
+    ];
 
-    const tasksReadme = path.join(tasksDir(folder), ROOT_README_FILE);
-    if (!fs.existsSync(tasksReadme)) {
-        fs.writeFileSync(tasksReadme, TASKS_README_CONTENT, 'utf8');
+    for (const seed of seeds) {
+        if (!fs.existsSync(seed.path)) {
+            fs.writeFileSync(seed.path, seed.content, 'utf8');
+        }
     }
 }
 

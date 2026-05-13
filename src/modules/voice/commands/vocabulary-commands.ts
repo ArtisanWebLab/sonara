@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
 import { CommandDeps } from './types';
-import { ensureVocabularyFile } from '../webview/voice-log/vocabulary-store';
 import { vocabularyFile, ensureSonaraProject } from '../../../shared/project-layout';
 import { openInEditor } from '../../../shared/fs-utils';
 
@@ -16,8 +15,7 @@ export function registerVocabularyCommands(deps: CommandDeps): void {
                 return;
             }
             ensureSonaraProject(folder);
-            const filePath = ensureVocabularyFile(vocabularyFile(folder));
-            await openInEditor(filePath);
+            await openInEditor(vocabularyFile(folder));
         }),
     );
 }
