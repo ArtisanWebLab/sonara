@@ -94,6 +94,12 @@ ${buildIconsScriptDecl()}
                 showAll = !showAll;
                 renderRecords(allRecords);
                 break;
+            case 'clearSearch':
+                if (searchInput.value !== '') {
+                    clearTimeout(searchTimer);
+                    searchInput.value = '';
+                }
+                break;
         }
     });
 

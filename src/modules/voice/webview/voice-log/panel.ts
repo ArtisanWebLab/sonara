@@ -53,11 +53,19 @@ export class VoiceLogPanel implements vscode.WebviewViewProvider, vscode.Disposa
 
     private attachStoreListeners(): void {
         this.storeDisposables.push(
-            this.logStore.onRecordAdded(() => this.refresh()),
+            this.logStore.onRecordAdded(() => this.resetSearchAndRefresh()),
             this.logStore.onRecordUpdated(() => this.refresh()),
             this.logStore.onRecordDeleted(() => this.refresh()),
             this.logStore.onDraftChanged(draft => this.sendDraft(draft)),
         );
+    }
+
+    private async resetSearchAndRefresh(): Promise<void> {
+        if (this.searchQuery !== '') {
+            this.searchQuery = '';
+            this.view?.webview.postMessage({ type: 'clearSearch' });
+        }
+        await this.refresh();
     }
 
     private sendDraft(draft: DraftRecord | null): void {
