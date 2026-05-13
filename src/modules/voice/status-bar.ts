@@ -2,12 +2,14 @@ import * as vscode from 'vscode';
 import { ServerManager, ServerStatus } from './server/server-manager';
 import { AudioRecorder, RecorderState } from './audio/audio-recorder';
 import { LogStore } from './webview/voice-log/log-store';
+import { TranscribingState } from './commands/recording-commands';
 
 export class StatusBar implements vscode.Disposable {
     private readonly item: vscode.StatusBarItem;
     private readonly disposables: vscode.Disposable[] = [];
     private logStore: LogStore;
     private logStoreSubscriptions: vscode.Disposable[] = [];
+    private transcribingState: TranscribingState | null = null;
 
     constructor(
         private readonly server: ServerManager,
@@ -31,6 +33,12 @@ export class StatusBar implements vscode.Disposable {
         this.update();
     }
 
+    attachTranscribingState(state: TranscribingState): void {
+        this.transcribingState = state;
+        this.disposables.push(state.onChanged(() => this.update()));
+        this.update();
+    }
+
     updateLogStore(logStore: LogStore): void {
         this.logStore = logStore;
         this.logStoreSubscriptions.forEach(d => d.dispose());
@@ -49,6 +57,7 @@ export class StatusBar implements vscode.Disposable {
     private update(): void {
         const recorderState = this.recorder.state;
         const serverStatus = this.server.status;
+        const isTranscribing = this.transcribingState?.isActive === true;
 
         if (recorderState === 'recording') {
             this.item.text = '$(record) Voice: Recording';
@@ -64,10 +73,10 @@ export class StatusBar implements vscode.Disposable {
             return;
         }
 
-        if (recorderState === 'processing') {
+        if (isTranscribing || recorderState === 'processing') {
             this.item.text = '$(loading~spin) Voice: Transcribing';
-            this.item.tooltip = 'Sending audio to Whisper...';
-            this.item.backgroundColor = undefined;
+            this.item.tooltip = 'Sending audio to Whisper, please wait...';
+            this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
             return;
         }
 

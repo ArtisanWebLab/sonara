@@ -127,7 +127,8 @@ export async function registerVoiceModule(
         getTranscriptStore: () => voiceTranscriptsPanel.getCurrentStore(),
     };
 
-    registerRecordingCommands(deps);
+    const transcribingState = registerRecordingCommands(deps);
+    statusBar.attachTranscribingState(transcribingState);
     registerLogCommands(deps);
     registerModelCommands(deps);
     registerServerCommands(deps);

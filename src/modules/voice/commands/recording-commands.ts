@@ -40,7 +40,12 @@ const STREAMING_MODE_OPTIONS: StreamingModeOption[] = [
     },
 ];
 
-export function registerRecordingCommands(deps: CommandDeps): void {
+export interface TranscribingState {
+    readonly isActive: boolean;
+    readonly onChanged: vscode.Event<boolean>;
+}
+
+export function registerRecordingCommands(deps: CommandDeps): TranscribingState {
     const { extensionContext, server, recorder, apiClient, activeProject, logStoreFor, extensionLog } = deps;
 
     let streamingSession: StreamingSession | null = null;
@@ -60,6 +65,19 @@ export function registerRecordingCommands(deps: CommandDeps): void {
 
     // Snapshotted at recording start - writes always go to origin folder.
     let recordingLogStore: LogStore | null = null;
+
+    let isTranscribing: boolean = false;
+    const transcribingChangedEmitter = new vscode.EventEmitter<boolean>();
+    extensionContext.subscriptions.push(transcribingChangedEmitter);
+
+    function setTranscribing(value: boolean): void {
+        if (isTranscribing === value) {
+            return;
+        }
+        isTranscribing = value;
+        vscode.commands.executeCommand('setContext', 'sonara.voice.isTranscribing', value);
+        transcribingChangedEmitter.fire(value);
+    }
 
     function currentDurationSec(): number {
         return (Date.now() - streamingStartMs) / 1000;
@@ -352,6 +370,7 @@ export function registerRecordingCommands(deps: CommandDeps): void {
         const wavBuffer = encodePcmToWav(bufferedChunks);
         const config = vscode.workspace.getConfiguration(VOICE_CONFIG_SECTION);
 
+        setTranscribing(true);
         let transcribeResult;
         try {
             transcribeResult = await apiClient.transcribe(
@@ -364,6 +383,8 @@ export function registerRecordingCommands(deps: CommandDeps): void {
             clearDraft();
             vscode.window.showErrorMessage(`Transcription failed: ${err}`);
             return;
+        } finally {
+            setTranscribing(false);
         }
 
         clearDraft();
@@ -419,6 +440,7 @@ export function registerRecordingCommands(deps: CommandDeps): void {
         streamingFinalizing = true;
         publishTranscribingDraft(stopResult.durationSec, streamingFinalText);
 
+        setTranscribing(true);
         let finalText = streamingFinalText;
         try {
             const result = await session.finalize();
@@ -429,6 +451,8 @@ export function registerRecordingCommands(deps: CommandDeps): void {
             extensionLog.appendLine(`[Streaming] final text length=${finalText.length}`);
         } catch (err) {
             extensionLog.appendLine(`[Streaming] finalize error: ${err}`);
+        } finally {
+            setTranscribing(false);
         }
 
         streamingSession = null;
@@ -560,6 +584,12 @@ export function registerRecordingCommands(deps: CommandDeps): void {
                 await vscode.commands.executeCommand('sonara.voice.stopRecording');
                 return;
             }
+            if (isTranscribing) {
+                vscode.window.showInformationMessage(
+                    'Wait, transcribing the previous recording...',
+                );
+                return;
+            }
             if (recorder.state === 'idle') {
                 await vscode.commands.executeCommand('sonara.voice.startRecording');
             }
@@ -580,6 +610,12 @@ export function registerRecordingCommands(deps: CommandDeps): void {
         vscode.commands.registerCommand('sonara.voice.startRecording', async () => {
             if (server.status !== 'ready') {
                 vscode.window.showWarningMessage('Voice server is not ready yet.');
+                return;
+            }
+            if (isTranscribing) {
+                vscode.window.showInformationMessage(
+                    'Wait, transcribing the previous recording...',
+                );
                 return;
             }
             if (recorder.state !== 'idle') {
@@ -659,6 +695,7 @@ export function registerRecordingCommands(deps: CommandDeps): void {
             const vocabulary = loadRecordingVocabulary();
             const initialPrompt = buildInitialPrompt(vocabulary);
 
+            setTranscribing(true);
             let transcribeResult;
             try {
                 transcribeResult = await apiClient.transcribe(
@@ -671,6 +708,8 @@ export function registerRecordingCommands(deps: CommandDeps): void {
                 clearDraft();
                 vscode.window.showErrorMessage(`Transcription failed: ${err}`);
                 return;
+            } finally {
+                setTranscribing(false);
             }
 
             clearDraft();
@@ -705,4 +744,11 @@ export function registerRecordingCommands(deps: CommandDeps): void {
             }
         }),
     );
+
+    return {
+        get isActive(): boolean {
+            return isTranscribing;
+        },
+        onChanged: transcribingChangedEmitter.event,
+    };
 }

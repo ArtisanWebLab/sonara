@@ -22,11 +22,11 @@ export const PANEL_STYLES = `
 .record-card.draft:hover { background: color-mix(in srgb, var(--vscode-charts-red) 16%, transparent); }
 
 .record-card.draft[data-mode="transcribing"] {
-    background: color-mix(in srgb, var(--vscode-charts-blue) 10%, transparent);
-    border-left: 2px solid var(--vscode-charts-blue);
+    background: color-mix(in srgb, var(--vscode-charts-yellow) 10%, transparent);
+    border-left: 2px solid var(--vscode-charts-yellow);
 }
 .record-card.draft[data-mode="transcribing"]:hover {
-    background: color-mix(in srgb, var(--vscode-charts-blue) 16%, transparent);
+    background: color-mix(in srgb, var(--vscode-charts-yellow) 16%, transparent);
 }
 
 .draft-dot {
@@ -38,7 +38,7 @@ export const PANEL_STYLES = `
     animation: pulse 1s ease-in-out infinite;
 }
 .record-card.draft[data-mode="transcribing"] .draft-dot {
-    background: var(--vscode-charts-blue);
+    background: var(--vscode-charts-yellow);
     animation: pulse 1.4s ease-in-out infinite;
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
@@ -51,7 +51,7 @@ export const PANEL_STYLES = `
     color: var(--vscode-charts-red);
 }
 .record-card.draft[data-mode="transcribing"] .draft-label {
-    color: var(--vscode-charts-blue);
+    color: var(--vscode-charts-yellow);
 }
 
 .draft-confirmed { color: var(--vscode-foreground); }
