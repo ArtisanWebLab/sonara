@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { VoiceRecord } from './types';
+import { formatTime, formatDuration, pad2 } from '../../../../shared/date-format';
 
 export type DraftMode = 'recording' | 'live' | 'transcribing';
 
@@ -125,13 +126,12 @@ export class LogStore implements vscode.Disposable {
 
         for (const r of records) {
             const d = new Date(r.timestamp);
-            const dateStr = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+            const dateStr = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
             if (dateStr !== currentDate) {
                 currentDate = dateStr;
                 lines.push(`\n## ${dateStr}\n`);
             }
-            const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            lines.push(`**${time}** (${r.language}, ${r.duration_sec.toFixed(1)}s)`);
+            lines.push(`**${formatTime(d)}** (${r.language}, ${formatDuration(r.duration_sec)})`);
             lines.push(`\n> ${r.text}\n`);
         }
 

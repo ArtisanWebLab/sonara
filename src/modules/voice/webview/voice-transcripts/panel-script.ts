@@ -103,7 +103,7 @@ ${buildIconsScriptDecl()}
         if (isNaN(d.getTime())) return '';
         const pad = function (n) { return String(n).padStart(2, '0'); };
         return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() +
-            ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+            ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
     }
 
     function makeIconBtn(label, svg, action, copyKind) {

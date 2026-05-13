@@ -5,7 +5,7 @@ export function formatDate(date: Date): string {
 }
 
 export function formatTime(date: Date): string {
-    return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+    return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
 }
 
 export function formatDateTime(date: Date): string {

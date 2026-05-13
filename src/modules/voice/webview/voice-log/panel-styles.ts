@@ -76,6 +76,7 @@ export const PANEL_STYLES = `
 }
 
 .record-time { font-variant-numeric: tabular-nums; }
+.record-duration { font-variant-numeric: tabular-nums; opacity: 0.75; }
 
 .record-text {
     font-size: 12px;

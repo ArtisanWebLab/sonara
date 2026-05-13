@@ -267,6 +267,7 @@ ${buildIconsScriptDecl()}
 
         const d = new Date(record.timestamp);
         const time = formatDate(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+        const duration = formatDraftDuration(record.duration_sec || 0);
 
         const topRow = document.createElement('div');
         topRow.className = 'card-top-row';
@@ -275,7 +276,8 @@ ${buildIconsScriptDecl()}
         meta.className = 'record-meta';
         meta.innerHTML =
             (isUnread ? '<span class="unread-dot" title="Not copied yet"></span>' : '') +
-            '<span class="record-time">' + escHtml(time) + '</span>';
+            '<span class="record-time">' + escHtml(time) + '</span>' +
+            '<span class="record-duration">' + escHtml(duration) + '</span>';
         topRow.appendChild(meta);
 
         if (editingId !== record.id) {
