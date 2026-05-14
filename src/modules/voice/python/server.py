@@ -90,6 +90,37 @@ def is_cuda_available() -> bool:
         return False
 
 
+_CUDA_OOM_MARKERS = (
+    "CUBLAS_STATUS_ALLOC_FAILED",
+    "CUDA out of memory",
+    "out of memory",
+    "CUDNN_STATUS_NOT_ENOUGH_WORKSPACE",
+)
+
+
+def _is_cuda_oom(exc: BaseException) -> bool:
+    """Detect CUDA OOM-like errors by scanning the message and the chain of causes."""
+    seen: set[int] = set()
+    current: Optional[BaseException] = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        message = str(current)
+        for marker in _CUDA_OOM_MARKERS:
+            if marker.lower() in message.lower():
+                return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
+def _raise_cuda_oom(exc: BaseException) -> None:
+    """Convert a CUDA OOM exception into a structured HTTPException for the client."""
+    logger.error("CUDA OOM detected: {}", exc)
+    raise HTTPException(
+        status_code=507,
+        detail={"error_code": "cuda_oom", "message": str(exc)},
+    )
+
+
 class WhisperModel:
     def __init__(self) -> None:
         self._model = None
@@ -99,6 +130,8 @@ class WhisperModel:
         self._storage_dir: str = ""
         self._beam_size: int = 5
         self._loaded_at: float = 0.0
+        self._cpu_fallback_model = None
+        self._cpu_fallback_name: str = ""
 
     def load(
         self,
@@ -219,6 +252,44 @@ class WhisperModel:
     def reload(self, model_name: str, device: str, compute_type: str, beam_size: int) -> None:
         self.load(model_name, device, compute_type, self._storage_dir, beam_size)
 
+    def transcribe_on_cpu(
+        self,
+        audio_data: np.ndarray,
+        language: Optional[str],
+        vad_filter: bool,
+        initial_prompt: Optional[str] = None,
+    ) -> dict:
+        """Transcribe using a lazy-loaded CPU copy of the same model. Main GPU model stays loaded."""
+        from faster_whisper import WhisperModel as FasterWhisperModel
+
+        if self._cpu_fallback_model is None or self._cpu_fallback_name != self._model_name:
+            logger.info("Loading CPU fallback model {} (int8)...", self._model_name)
+            self._cpu_fallback_model = FasterWhisperModel(
+                self._model_name,
+                device="cpu",
+                compute_type="int8",
+                download_root=self._storage_dir,
+            )
+            self._cpu_fallback_name = self._model_name
+            logger.info("CPU fallback model loaded: {}", self._model_name)
+
+        lang = language if language and language != "auto" else None
+        logger.info("Transcribing on CPU fallback (model={})", self._model_name)
+        segments, info = self._cpu_fallback_model.transcribe(
+            audio_data,
+            language=lang,
+            beam_size=self._beam_size,
+            vad_filter=vad_filter,
+            initial_prompt=initial_prompt,
+        )
+        text = " ".join(segment.text for segment in segments).strip()
+        text = sanitize_transcription(text, info.language)
+        return {
+            "text": text,
+            "language": info.language,
+            "duration_sec": float(info.duration),
+        }
+
     @property
     def is_loaded(self) -> bool:
         return self._model is not None
@@ -319,6 +390,7 @@ async def transcribe(
     language: Optional[str] = Form(default=None),
     vad_filter: bool = Form(default=True),
     initial_prompt: Optional[str] = Form(default=None),
+    device_override: Optional[str] = Form(default=None),
     x_extension_token: str = Header(...),
 ) -> TranscribeResponse:
     verify_token(x_extension_token)
@@ -331,7 +403,21 @@ async def transcribe(
     audio_bytes = await audio.read()
     audio_array = _decode_wav(audio_bytes)
 
-    result = await asyncio.to_thread(whisper.transcribe, audio_array, language, vad_filter, initial_prompt)
+    try:
+        if device_override == "cpu":
+            result = await asyncio.to_thread(
+                whisper.transcribe_on_cpu, audio_array, language, vad_filter, initial_prompt
+            )
+        else:
+            result = await asyncio.to_thread(
+                whisper.transcribe, audio_array, language, vad_filter, initial_prompt
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        if _is_cuda_oom(exc):
+            _raise_cuda_oom(exc)
+        raise
 
     processing_time = round(time.time() - t0, 3)
     logger.info(
@@ -459,8 +545,23 @@ async def transcribe_stream_ws(ws: WebSocket) -> None:
     processing_lock = asyncio.Lock()
 
     async def emit_partial() -> None:
-        async with processing_lock:
-            result = await asyncio.to_thread(transcriber.process_iter)
+        try:
+            async with processing_lock:
+                result = await asyncio.to_thread(transcriber.process_iter)
+        except Exception as exc:
+            if _is_cuda_oom(exc):
+                logger.error("Streaming partial CUDA OOM: {}", exc)
+                try:
+                    await ws.send_json({
+                        "type": "error",
+                        "error_code": "cuda_oom",
+                        "message": str(exc),
+                    })
+                except Exception:
+                    pass
+                stop_event.set()
+                return
+            raise
         try:
             await ws.send_json({
                 "type": "partial",
@@ -509,8 +610,19 @@ async def transcribe_stream_ws(ws: WebSocket) -> None:
             if action == "process":
                 await emit_partial()
             elif action == "finalize":
-                async with processing_lock:
-                    result = await asyncio.to_thread(transcriber.finalize)
+                try:
+                    async with processing_lock:
+                        result = await asyncio.to_thread(transcriber.finalize)
+                except Exception as exc:
+                    if _is_cuda_oom(exc):
+                        logger.error("Streaming finalize CUDA OOM: {}", exc)
+                        await ws.send_json({
+                            "type": "error",
+                            "error_code": "cuda_oom",
+                            "message": str(exc),
+                        })
+                        break
+                    raise
                 await ws.send_json({
                     "type": "final",
                     "text": result.confirmed_text,
