@@ -314,6 +314,7 @@ ${buildIconsScriptDecl()}
         topActions.className = 'card-actions';
         topActions.appendChild(buildIconBtn('Open preview', ICON_SHOW, 'openPreview'));
         topActions.appendChild(buildIconBtn('Edit task file', ICON_EDIT, 'openEditor'));
+        topActions.appendChild(buildIconBtn('Reveal in File Explorer', ICON_REVEAL, 'revealInOS'));
         topActions.appendChild(buildIconBtn('Copy task body', ICON_COPY, 'copyText', 'text'));
         topActions.appendChild(buildIconBtn('Copy file path', ICON_COPY_PATH, 'copyPath', 'path'));
         const deleteBtn = buildIconBtn('Delete task', ICON_DELETE, 'delete');

@@ -10,6 +10,7 @@ import { openInEditor } from '../../../../shared/fs-utils';
 type PanelMessage =
     | { type: 'ready' }
     | { type: 'open'; id: string }
+    | { type: 'openPreview'; id: string }
     | { type: 'reveal'; id: string }
     | { type: 'copyText'; id: string }
     | { type: 'copyPath'; id: string }
@@ -18,6 +19,7 @@ type PanelMessage =
 export class VoiceTranscriptsPanel implements vscode.WebviewViewProvider, vscode.Disposable {
     private view: vscode.WebviewView | null = null;
     private store: TranscriptStore;
+    private secondaryColumn: vscode.ViewColumn | undefined;
     private readonly storeDisposables: vscode.Disposable[] = [];
     private readonly panelDisposables: vscode.Disposable[] = [];
 
@@ -95,6 +97,11 @@ export class VoiceTranscriptsPanel implements vscode.WebviewViewProvider, vscode
                 break;
             }
 
+            case 'openPreview': {
+                await this.openMarkdownPreviewReusing(vscode.Uri.file(this.fullPath(msg.id)));
+                break;
+            }
+
             case 'reveal': {
                 await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(this.fullPath(msg.id)));
                 break;
@@ -124,6 +131,27 @@ export class VoiceTranscriptsPanel implements vscode.WebviewViewProvider, vscode
                 }
                 break;
             }
+        }
+    }
+
+    private resolveSecondaryColumn(): vscode.ViewColumn {
+        if (this.secondaryColumn !== undefined) {
+            const stillOpen = vscode.window.tabGroups.all.some(
+                g => g.viewColumn === this.secondaryColumn && g.tabs.length > 0,
+            );
+            if (stillOpen) {
+                return this.secondaryColumn;
+            }
+            this.secondaryColumn = undefined;
+        }
+        return vscode.ViewColumn.Beside;
+    }
+
+    private async openMarkdownPreviewReusing(uri: vscode.Uri): Promise<void> {
+        const column = this.resolveSecondaryColumn();
+        await vscode.commands.executeCommand('vscode.openWith', uri, 'vscode.markdown.preview.editor', column);
+        if (column === vscode.ViewColumn.Beside) {
+            this.secondaryColumn = vscode.window.tabGroups.activeTabGroup.viewColumn;
         }
     }
 

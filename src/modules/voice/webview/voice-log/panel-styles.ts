@@ -73,6 +73,7 @@ export const PANEL_STYLES = `
     gap: 8px;
     font-size: 11px;
     color: var(--vscode-descriptionForeground);
+    flex-wrap: wrap;
 }
 
 .record-time { font-variant-numeric: tabular-nums; }

@@ -8,7 +8,7 @@ export const TRANSCRIPTS_PANEL_STYLES = `
 .transcript-card {
     padding: 8px 10px;
     border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
-    cursor: pointer;
+    cursor: default;
     transition: background 0.1s;
 }
 .transcript-card:hover { background: var(--vscode-list-hoverBackground); }
@@ -19,7 +19,9 @@ export const TRANSCRIPTS_PANEL_STYLES = `
     color: var(--vscode-foreground);
     word-break: break-word;
     margin-bottom: 3px;
+    cursor: pointer;
 }
+.transcript-name:hover { text-decoration: underline; }
 
 .transcript-meta {
     display: flex;

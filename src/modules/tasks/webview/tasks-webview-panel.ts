@@ -28,6 +28,7 @@ type IncomingMessage =
     | { type: 'openEditor'; id: string }
     | { type: 'copyText'; id: string }
     | { type: 'copyPath'; id: string }
+    | { type: 'revealInOS'; id: string }
     | { type: 'changeStatus'; id: string }
     | { type: 'changePriority'; id: string }
     | { type: 'changeSprint'; id: string }
@@ -166,6 +167,13 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
                 if (uri) {
                     await vscode.env.clipboard.writeText(uri.fsPath);
                     this.postCopied(msg.id, 'path');
+                }
+                return;
+            }
+            case 'revealInOS': {
+                const uri = this.store.getUriByPath(msg.id);
+                if (uri) {
+                    await vscode.commands.executeCommand('revealFileInOS', uri);
                 }
                 return;
             }

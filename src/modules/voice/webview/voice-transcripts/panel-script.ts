@@ -18,10 +18,13 @@ ${buildIconsScriptDecl()}
             if (action && id) vscode.postMessage({ type: action, id });
             return;
         }
-        // Card body click opens.
-        const card = event.target.closest('.transcript-card');
-        if (card && card.dataset.id) {
-            vscode.postMessage({ type: 'open', id: card.dataset.id });
+        // Title click opens preview.
+        const name = event.target.closest('.transcript-name');
+        if (name) {
+            const card = name.closest('[data-id]');
+            if (card && card.dataset.id) {
+                vscode.postMessage({ type: 'openPreview', id: card.dataset.id });
+            }
         }
     });
 
@@ -72,6 +75,7 @@ ${buildIconsScriptDecl()}
 
         const actions = document.createElement('div');
         actions.className = 'card-actions';
+        actions.appendChild(makeIconBtn('Open preview', ICON_SHOW, 'openPreview'));
         actions.appendChild(makeIconBtn('Edit transcript file', ICON_EDIT, 'open'));
         actions.appendChild(makeIconBtn('Reveal in File Explorer', ICON_REVEAL, 'reveal'));
         actions.appendChild(makeIconBtn('Copy transcript text', ICON_COPY, 'copyText', 'text'));
@@ -86,6 +90,7 @@ ${buildIconsScriptDecl()}
         const name = document.createElement('div');
         name.className = 'transcript-name';
         name.textContent = item.sourceName;
+        name.title = 'Open preview';
         card.appendChild(name);
 
         if (item.summary) {
