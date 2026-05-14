@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { ensureDir } from './fs-utils';
 import { TASKS_README_CONTENT } from '../modules/tasks/templates/tasks-readme';
 import { VOCABULARY_TEMPLATE } from '../modules/voice/templates/vocabulary-template';
+import { VOICE_TRANSCRIPTS_README_CONTENT } from '../modules/voice/templates/voice-transcripts-readme';
 
 const SONARA_ROOT = '.vscode/sonara';
 
@@ -69,6 +70,7 @@ export function ensureSonaraProject(folder: vscode.WorkspaceFolder): void {
     const seeds: SeedFile[] = [
         { path: path.join(sonaraRoot(folder), ROOT_README_FILE), content: ROOT_README_CONTENT },
         { path: path.join(tasksDir(folder), ROOT_README_FILE), content: TASKS_README_CONTENT },
+        { path: path.join(transcriptsDir(folder), ROOT_README_FILE), content: VOICE_TRANSCRIPTS_README_CONTENT },
         { path: vocabularyFile(folder), content: VOCABULARY_TEMPLATE },
     ];
 

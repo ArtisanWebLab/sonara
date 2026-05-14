@@ -2,6 +2,7 @@ import { TranscribedSegment } from '../../server/api-client';
 import { formatDateTime, formatDuration, pad2 } from '../../../../shared/date-format';
 
 const TIMESTAMP_INTERVAL_SEC = 60;
+const HEADER_COMMENT = '<!-- Sonara voice transcript. Format and rules: .vscode/sonara/voice-transcripts/README.md -->';
 
 export const SUMMARY_PLACEHOLDER =
     '_No summary yet. Replace this line with a 2-3 bullet summary, under 200 characters total. The UI only renders the first 3 lines - anything longer is invisible. Keep it short and in the transcript language._';
@@ -16,18 +17,17 @@ export interface TranscriptMeta {
 }
 
 export function formatTranscriptMarkdown(segments: TranscribedSegment[], meta: TranscriptMeta): string {
-    const headerJson = JSON.stringify({
-        source: meta.source,
-        created_at: meta.createdAt,
-        duration_sec: meta.durationSec,
-        language: meta.language,
-        model: meta.model,
-        processing_time_sec: meta.processingTimeSec,
-    });
-
     const lines: string[] = [];
-    lines.push(`<!-- sonara:transcript ${headerJson} -->`);
-    lines.push(`# ${meta.source}`);
+    lines.push('---');
+    lines.push(`source: ${meta.source}`);
+    lines.push(`created: ${meta.createdAt}`);
+    lines.push(`duration_sec: ${meta.durationSec}`);
+    lines.push(`language: ${meta.language}`);
+    lines.push(`model: ${meta.model}`);
+    lines.push(`processing_time_sec: ${meta.processingTimeSec}`);
+    lines.push('---');
+    lines.push('');
+    lines.push(HEADER_COMMENT);
     lines.push('');
     lines.push('## Summary');
     lines.push('');
@@ -35,10 +35,10 @@ export function formatTranscriptMarkdown(segments: TranscribedSegment[], meta: T
     lines.push('');
     lines.push('---');
     lines.push('');
+    lines.push(`**Transcribed:** ${formatDateTime(new Date(meta.createdAt))}  `);
     lines.push(`**Duration:** ${formatDuration(meta.durationSec)}  `);
     lines.push(`**Language:** ${meta.language}  `);
-    lines.push(`**Model:** ${meta.model}  `);
-    lines.push(`**Transcribed:** ${formatDateTime(new Date(meta.createdAt))}`);
+    lines.push(`**Model:** ${meta.model}`);
     lines.push('');
 
     let lastTimestamp = -TIMESTAMP_INTERVAL_SEC;
@@ -79,4 +79,3 @@ function formatTimecode(seconds: number): string {
     const s = total % 60;
     return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
 }
-

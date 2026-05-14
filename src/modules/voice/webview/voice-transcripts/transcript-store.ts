@@ -1,19 +1,19 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import matter from 'gray-matter';
 
 import { TranscriptFile } from './types';
 import { SUMMARY_PLACEHOLDER } from './transcript-formatter';
 
 const TRANSCRIPT_EXTENSION = '.md';
-const HEADER_PATTERN = /^<!--\s*sonara:transcript\s+(\{.*\})\s*-->/;
 const SUMMARY_SECTION_PATTERN = /^##\s+Summary\s*$/m;
 const PREAMBLE_BYTES = 4096;
 const NON_TRANSCRIPT_FILES = new Set(['README.md']);
 
 interface TranscriptHeader {
     source?: string;
-    created_at?: string;
+    created?: string;
     duration_sec?: number;
     language?: string;
 }
@@ -60,7 +60,7 @@ export class TranscriptStore implements vscode.Disposable {
             files.push({
                 id: entry.name,
                 sourceName: header.source ?? path.parse(entry.name).name,
-                createdAt: header.created_at ?? stat.mtime.toISOString(),
+                createdAt: header.created ?? stat.mtime.toISOString(),
                 durationSec: header.duration_sec,
                 language: header.language,
                 summary,
@@ -84,13 +84,22 @@ export class TranscriptStore implements vscode.Disposable {
     }
 
     private parseHeader(preamble: string): TranscriptHeader {
-        const firstLine = preamble.split('\n', 1)[0];
-        const match = firstLine.match(HEADER_PATTERN);
-        if (!match) {
+        const forParser = stripLeadingHtmlComments(preamble.replace(/^﻿/, ''));
+        if (!/^---\s*\r?\n/.test(forParser)) {
             return {};
         }
         try {
-            return JSON.parse(match[1]) as TranscriptHeader;
+            const data = matter(forParser).data as Record<string, unknown>;
+            const header: TranscriptHeader = {};
+            if (typeof data.source === 'string') header.source = data.source;
+            if (typeof data.created === 'string') {
+                header.created = data.created;
+            } else if (data.created instanceof Date) {
+                header.created = data.created.toISOString();
+            }
+            if (typeof data.duration_sec === 'number') header.duration_sec = data.duration_sec;
+            if (typeof data.language === 'string') header.language = data.language;
+            return header;
         } catch {
             return {};
         }
@@ -145,4 +154,16 @@ export class TranscriptStore implements vscode.Disposable {
         this.stopWatching();
         this.onChangedEmitter.dispose();
     }
+}
+
+function stripLeadingHtmlComments(text: string): string {
+    let rest = text.replace(/^\s+/, '');
+    while (rest.startsWith('<!--')) {
+        const end = rest.indexOf('-->');
+        if (end === -1) {
+            break;
+        }
+        rest = rest.slice(end + 3).replace(/^\s+/, '');
+    }
+    return rest;
 }
