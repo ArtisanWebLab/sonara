@@ -277,8 +277,8 @@ ${buildIconsScriptDecl()}
             const copyFullBtn = document.createElement('button');
             copyFullBtn.className = 'section-copy-md';
             copyFullBtn.title = 'Copy these tasks with full content';
-            copyFullBtn.innerHTML = ICON_COPY;
-            copyFullBtn.dataset.iconOriginal = ICON_COPY;
+            copyFullBtn.innerHTML = ICON_COPY_FULL;
+            copyFullBtn.dataset.iconOriginal = ICON_COPY_FULL;
             copyFullBtn.dataset.sectionId = id;
             copyFullBtn.dataset.mode = 'full';
             header.appendChild(copyFullBtn);
@@ -505,9 +505,10 @@ ${buildIconsScriptDecl()}
         btn.appendChild(labelSpan);
         const icon = document.createElement('span');
         icon.className = 'filter-copy-md-icon';
-        icon.innerHTML = ICON_COPY;
+        const iconSvg = mode === 'full' ? ICON_COPY_FULL : ICON_COPY;
+        icon.innerHTML = iconSvg;
         btn.appendChild(icon);
-        btn.dataset.iconOriginal = ICON_COPY;
+        btn.dataset.iconOriginal = iconSvg;
         return btn;
     }
 

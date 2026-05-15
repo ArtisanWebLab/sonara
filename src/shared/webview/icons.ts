@@ -11,6 +11,15 @@ export const ICON_COPY =
     '<path d="M3.5 12V4.5A1.5 1.5 0 0 1 5 3h7.5"/>' +
     SVG_CLOSE;
 
+export const ICON_COPY_FULL =
+    SVG_OPEN +
+    '<rect x="6" y="6" width="9" height="9" rx="1.5"/>' +
+    '<path d="M3.5 12V4.5A1.5 1.5 0 0 1 5 3h7.5"/>' +
+    '<line x1="8" y1="9" x2="13" y2="9"/>' +
+    '<line x1="8" y1="11.5" x2="13" y2="11.5"/>' +
+    '<line x1="8" y1="14" x2="11" y2="14"/>' +
+    SVG_CLOSE;
+
 export const ICON_COPIED =
     SVG_OPEN.replace('stroke-width="1.3"', 'stroke-width="1.8"') +
     '<polyline points="3.5,9.5 7.5,13.5 14.5,5.5"/>' +
@@ -63,6 +72,7 @@ export const ICON_DELETE =
 export function buildIconsScriptDecl(): string {
     const decls: Array<[string, string]> = [
         ['ICON_COPY', ICON_COPY],
+        ['ICON_COPY_FULL', ICON_COPY_FULL],
         ['ICON_COPIED', ICON_COPIED],
         ['ICON_COPY_PATH', ICON_COPY_PATH],
         ['ICON_SHOW', ICON_SHOW],
