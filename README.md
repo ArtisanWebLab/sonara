@@ -12,7 +12,7 @@ Manage project tasks as plain markdown files — no external service, no account
 
 - One markdown file per task with YAML frontmatter metadata
 - Fields: title, status, priority, sprint, labels, created, updated
-- Webview panel groups tasks by status: Inbox, Backlog, To Do, In Progress, Review, Done, Archived
+- Webview panel groups tasks by status: Activity, Inbox, Backlog, To Do, In Progress, Review, Done, Released, Cancelled
 - Five priority levels: Highest, High, Medium, Low, Lowest
 - Filter by sprint, label, and priority directly in the panel
 - Create, edit, and delete tasks without leaving VS Code
@@ -86,7 +86,7 @@ Task description in free-form markdown.
 | Field | Required | Values |
 |-------|----------|--------|
 | `title` | No (filename used as fallback) | Any string |
-| `status` | No (null if omitted or invalid) | `inbox`, `backlog`, `todo`, `in-progress`, `review`, `done`, `archived` |
+| `status` | No (null if omitted or invalid) | `activity`, `inbox`, `backlog`, `todo`, `in-progress`, `review`, `done`, `released`, `cancelled` |
 | `priority` | No (defaults to `medium`) | `highest`, `high`, `medium`, `low`, `lowest` |
 | `created` | No | ISO 8601 date string |
 | `updated` | No | ISO 8601 date string |

@@ -88,7 +88,7 @@ interface StateDto {
 }
 
 const COLLAPSED_SECTIONS_KEY = 'sonara.tasks.collapsedSections';
-const DEFAULT_COLLAPSED_SECTIONS: readonly string[] = ['backlog', 'done', 'archived', NO_STATUS_SECTION_ID];
+const DEFAULT_COLLAPSED_SECTIONS: readonly string[] = ['backlog', 'done', 'released', 'cancelled', NO_STATUS_SECTION_ID];
 const FILTERS_KEY = 'sonara.tasks.filters';
 const DEFAULT_FILTERS: TaskFilters = { priorities: [], sprints: [], labels: [] };
 

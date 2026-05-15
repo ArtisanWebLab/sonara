@@ -183,12 +183,14 @@ export const PANEL_STYLES = `
     transition: filter 0.1s;
 }
 .chip-clickable:hover { filter: brightness(1.2); }
+.card-status[data-status="activity"]    { background: color-mix(in srgb, var(--vscode-charts-foreground) 16%, transparent); color: var(--vscode-charts-foreground); }
 .card-status[data-status="backlog"]     { background: color-mix(in srgb, var(--vscode-charts-foreground) 22%, transparent); color: var(--vscode-charts-foreground); }
 .card-status[data-status="todo"]        { background: color-mix(in srgb, var(--vscode-charts-yellow) 22%, transparent); color: var(--vscode-charts-yellow); }
 .card-status[data-status="in-progress"] { background: color-mix(in srgb, var(--vscode-charts-blue) 22%, transparent); color: var(--vscode-charts-blue); }
 .card-status[data-status="review"]      { background: color-mix(in srgb, var(--vscode-charts-purple) 22%, transparent); color: var(--vscode-charts-purple); }
 .card-status[data-status="done"]        { background: color-mix(in srgb, var(--vscode-charts-green) 22%, transparent); color: var(--vscode-charts-green); }
-.card-status[data-status="archived"]    { background: color-mix(in srgb, var(--vscode-charts-foreground) 18%, transparent); color: var(--vscode-charts-foreground); opacity: 0.7; }
+.card-status[data-status="released"]    { background: color-mix(in srgb, var(--vscode-charts-foreground) 18%, transparent); color: var(--vscode-charts-foreground); opacity: 0.7; }
+.card-status[data-status="cancelled"]   { background: color-mix(in srgb, var(--vscode-charts-foreground) 14%, transparent); color: var(--vscode-charts-foreground); opacity: 0.55; text-decoration: line-through; }
 .card-status[data-status="error"]       { background: color-mix(in srgb, var(--vscode-charts-red) 22%, transparent); color: var(--vscode-charts-red); }
 
 .card-priority {

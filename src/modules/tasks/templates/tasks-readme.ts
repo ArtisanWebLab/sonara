@@ -44,7 +44,21 @@ Set \`summary\` explicitly when the body starts with a checklist or heading.
 
 ## Workflow
 
-\`inbox\` -> \`backlog\` -> \`todo\` -> \`in-progress\` -> \`review\` -> \`done\` -> \`archived\`
+\`inbox\` -> \`backlog\` -> \`todo\` -> \`in-progress\` -> \`review\` -> \`done\` -> \`released\`
+
+Status meanings:
+
+- \`inbox\` - captured, not triaged yet.
+- \`backlog\` - accepted, will be picked up later.
+- \`todo\` - planned for the current cycle, not started.
+- \`in-progress\` - actively being worked on.
+- \`review\` - implementation finished, awaiting verification.
+- \`done\` - verified and ready to ship, but not yet deployed. Tasks can sit here for days or weeks until the next release.
+- \`released\` - shipped to production. Closes the task's lifecycle on the success path.
+- \`cancelled\` - decided not to do it. Closes on the rejection path. Add a short reason in the body.
+- \`activity\` - separate parking lot for recurring work that has no end state (meetings, support shifts, monitoring). Tasks in \`activity\` stay there indefinitely and do not flow through the workflow above. They behave like regular tasks otherwise (priority, sprint, labels are optional).
+
+The split between \`done\` and \`released\` exists because work is often shipped in batches: a task completed today may stay in \`done\` until the next release goes out. Use \`done\` to answer "is the work finished?" and \`released\` to answer "is it live for users?".
 
 ## Priority
 
@@ -55,14 +69,14 @@ Set \`summary\` explicitly when the body starts with a checklist or heading.
 - Default \`status\` for new tasks: \`inbox\`. Never put a new task straight into a later stage without being asked.
 - When merging or rewriting a task, reset \`status\` to \`inbox\` and ask the user where it belongs.
 - Update \`updated\` on every change.
-- Move through stages in order. Never write directly to \`done\` or \`archived\` without going through \`review\`, unless the user explicitly skips it.
-- Cancelled work -> \`archived\` with a short reason in the body.
+- Move through stages in order. Never write directly to \`done\` or \`released\` without going through \`review\`, unless the user explicitly skips it.
+- Cancelled work -> \`cancelled\` with a short reason in the body.
 - Don't modify other tasks without an explicit request.
 - Write task bodies as actionable checklists (\`- [ ] ...\`) so progress is trackable.
 
 ### Closing a task
 
-Before \`done\` or \`archived\`:
+Before \`done\`, \`released\` or \`cancelled\`:
 1. Mark each checklist item: \`- [x]\` for done, leave unchecked with a note for skipped (\`- [ ] X - skipped, no longer relevant\`).
 2. Append a 2-4 sentence completion summary at the bottom.
 `;
