@@ -19,6 +19,8 @@ import { executeChangeSprint } from '../commands/change-sprint-command';
 import { executeEditLabels } from '../commands/edit-labels-command';
 import { executeChangeStatus } from '../commands/change-status-command';
 import { executeChangePriority } from '../commands/change-priority-command';
+import { TimerService } from '../../time-tracker/timer-service';
+import { taskFileSlug } from '../../time-tracker/slug';
 
 type IncomingMessage =
     | { type: 'ready' }
@@ -39,7 +41,8 @@ type IncomingMessage =
     | { type: 'toggleFilterValue'; kind: 'priority' | 'sprint' | 'label'; value: string }
     | { type: 'clearFilters' }
     | { type: 'copyAllAsMarkdown'; mode: 'summary' | 'full' }
-    | { type: 'copySectionAsMarkdown'; sectionId: string; mode: 'summary' | 'full' };
+    | { type: 'copySectionAsMarkdown'; sectionId: string; mode: 'summary' | 'full' }
+    | { type: 'timerToggle'; slug: string };
 
 type CopyMarkdownMode = 'summary' | 'full';
 
@@ -51,6 +54,7 @@ interface TaskFilters {
 
 interface TaskDto {
     id: string;
+    slug: string | null;
     title: string;
     status: TaskStatus | null;
     priority: TaskPriority;
@@ -60,6 +64,8 @@ interface TaskDto {
     updated: string | null;
     summary: string;
     body: string;
+    timeTotalSec: number;
+    isTimerActive: boolean;
 }
 
 interface ErrorDto {
@@ -98,13 +104,41 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
     private view: vscode.WebviewView | undefined;
     private secondaryColumn: vscode.ViewColumn | undefined;
     private readonly disposables: vscode.Disposable[] = [];
+    private timer: TimerService | undefined;
+    private totalsBySlug: Record<string, number> = {};
 
     public constructor(
         private readonly store: TaskStore,
         private readonly extensionUri: vscode.Uri,
         private readonly memento: vscode.Memento,
     ) {
-        this.disposables.push(this.store.onDidChange(() => this.pushState()));
+        this.disposables.push(this.store.onDidChange(() => {
+            void this.refreshTotalsAndPush();
+        }));
+    }
+
+    public attachTimerService(timer: TimerService): void {
+        this.timer = timer;
+        this.disposables.push(
+            timer.onChange(change => {
+                if (change.slug) {
+                    this.totalsBySlug[change.slug] = change.total;
+                }
+                this.pushState();
+            }),
+        );
+        void this.refreshTotalsAndPush();
+    }
+
+    private async refreshTotalsAndPush(): Promise<void> {
+        if (this.timer) {
+            try {
+                this.totalsBySlug = await this.timer.totalsBySlug();
+            } catch {
+                // ignore - totals stay as last known
+            }
+        }
+        this.pushState();
     }
 
     public resolveWebviewView(view: vscode.WebviewView): void {
@@ -210,6 +244,11 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
                 return;
             case 'copySectionAsMarkdown':
                 await this.handleCopyMarkdown(msg.sectionId, msg.mode);
+                return;
+            case 'timerToggle':
+                if (this.timer && msg.slug) {
+                    await this.timer.toggle(msg.slug);
+                }
                 return;
         }
     }
@@ -453,9 +492,13 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
     private buildState(): StateDto {
         const tasks: TaskDto[] = [];
         const errors: ErrorDto[] = [];
+        const activeSlug = this.timer?.getActiveSlug() ?? null;
         for (const entry of this.store.getEntries()) {
             if (entry.kind === 'task') {
-                tasks.push(taskToDto(entry.task));
+                const slug = taskFileSlug(entry.task.fileUri.fsPath);
+                const total = slug ? this.totalsBySlug[slug] ?? 0 : 0;
+                const isActive = slug !== null && slug === activeSlug;
+                tasks.push(taskToDto(entry.task, slug, total, isActive));
             } else {
                 errors.push(errorToDto(entry.error));
             }
@@ -506,9 +549,10 @@ export class TasksWebviewPanel implements vscode.WebviewViewProvider, vscode.Dis
     }
 }
 
-function taskToDto(task: Task): TaskDto {
+function taskToDto(task: Task, slug: string | null, timeTotalSec: number, isTimerActive: boolean): TaskDto {
     return {
         id: task.fileUri.fsPath,
+        slug,
         title: task.title,
         status: task.status,
         priority: task.priority,
@@ -518,6 +562,8 @@ function taskToDto(task: Task): TaskDto {
         updated: task.updated,
         summary: task.summary,
         body: task.body,
+        timeTotalSec,
+        isTimerActive,
     };
 }
 

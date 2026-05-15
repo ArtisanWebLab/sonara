@@ -5,12 +5,14 @@ import { ensureDir } from './fs-utils';
 import { TASKS_README_CONTENT } from '../modules/tasks/templates/tasks-readme';
 import { VOCABULARY_TEMPLATE } from '../modules/voice/templates/vocabulary-template';
 import { VOICE_TRANSCRIPTS_README_CONTENT } from '../modules/voice/templates/voice-transcripts-readme';
+import { TIME_TRACKER_README_CONTENT } from '../modules/time-tracker/templates/time-tracker-readme';
 
 const SONARA_ROOT = '.vscode/sonara';
 
 export const TASKS_FOLDER_NAME = `${SONARA_ROOT}/tasks`;
 export const VOICE_LOG_FOLDER_NAME = `${SONARA_ROOT}/voice-log`;
 export const VOICE_TRANSCRIPTS_FOLDER_NAME = `${SONARA_ROOT}/voice-transcripts`;
+export const TIME_TRACKER_FOLDER_NAME = `${SONARA_ROOT}/time-tracker`;
 
 const ROOT_README_FILE = 'README.md';
 
@@ -56,6 +58,14 @@ export function transcriptsDir(folder: vscode.WorkspaceFolder): string {
     return path.join(folder.uri.fsPath, VOICE_TRANSCRIPTS_FOLDER_NAME);
 }
 
+export function timeTrackerDir(folder: vscode.WorkspaceFolder): string {
+    return path.join(folder.uri.fsPath, TIME_TRACKER_FOLDER_NAME);
+}
+
+export function timeTrackerDaysDir(folder: vscode.WorkspaceFolder): string {
+    return path.join(timeTrackerDir(folder), 'days');
+}
+
 interface SeedFile {
     path: string;
     content: string;
@@ -66,11 +76,14 @@ export function ensureSonaraProject(folder: vscode.WorkspaceFolder): void {
     ensureDir(tasksDir(folder));
     ensureDir(voiceLogDir(folder));
     ensureDir(transcriptsDir(folder));
+    ensureDir(timeTrackerDir(folder));
+    ensureDir(timeTrackerDaysDir(folder));
 
     const seeds: SeedFile[] = [
         { path: path.join(sonaraRoot(folder), ROOT_README_FILE), content: ROOT_README_CONTENT },
         { path: path.join(tasksDir(folder), ROOT_README_FILE), content: TASKS_README_CONTENT },
         { path: path.join(transcriptsDir(folder), ROOT_README_FILE), content: VOICE_TRANSCRIPTS_README_CONTENT },
+        { path: path.join(timeTrackerDir(folder), ROOT_README_FILE), content: TIME_TRACKER_README_CONTENT },
         { path: vocabularyFile(folder), content: VOCABULARY_TEMPLATE },
     ];
 

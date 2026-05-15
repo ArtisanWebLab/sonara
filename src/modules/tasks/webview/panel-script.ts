@@ -84,6 +84,15 @@ ${buildIconsScriptDecl()}
             return;
         }
 
+        // Timer Start/Stop button.
+        const timerBtn = e.target.closest('.timer-btn');
+        if (timerBtn && root.contains(timerBtn)) {
+            e.stopPropagation();
+            const slug = timerBtn.dataset.timerSlug;
+            if (slug) vscode.postMessage({ type: 'timerToggle', slug: slug });
+            return;
+        }
+
         // Card-level action button.
         const iconBtn = e.target.closest('.icon-btn');
         if (iconBtn && root.contains(iconBtn)) {
@@ -312,6 +321,16 @@ ${buildIconsScriptDecl()}
 
         const topActions = document.createElement('div');
         topActions.className = 'card-actions';
+        if (task.slug) {
+            const timerBtn = document.createElement('button');
+            timerBtn.className = 'icon-btn timer-btn' + (task.isTimerActive ? ' timer-btn-active' : '');
+            timerBtn.title = task.isTimerActive ? 'Stop time tracking' : 'Start time tracking';
+            timerBtn.dataset.timerSlug = task.slug;
+            timerBtn.innerHTML = task.isTimerActive
+                ? '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><rect x="4" y="4" width="8" height="8" rx="1"/></svg>'
+                : '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M5 3.5v9l8-4.5z"/></svg>';
+            topActions.appendChild(timerBtn);
+        }
         topActions.appendChild(buildIconBtn('Open preview', ICON_SHOW, 'openPreview'));
         topActions.appendChild(buildIconBtn('Edit task file', ICON_EDIT, 'openEditor'));
         topActions.appendChild(buildIconBtn('Reveal in File Explorer', ICON_REVEAL, 'revealInOS'));
@@ -378,7 +397,27 @@ ${buildIconsScriptDecl()}
             card.appendChild(summary);
         }
 
+        if (typeof task.timeTotalSec === 'number' && task.timeTotalSec > 0) {
+            const time = document.createElement('div');
+            time.className = 'card-time' + (task.isTimerActive ? ' card-time-active' : '');
+            time.textContent = formatHms(task.timeTotalSec);
+            card.appendChild(time);
+        } else if (task.isTimerActive) {
+            const time = document.createElement('div');
+            time.className = 'card-time card-time-active';
+            time.textContent = '0h 0m 0s';
+            card.appendChild(time);
+        }
+
         return card;
+    }
+
+    function formatHms(sec) {
+        sec = Math.max(0, Math.floor(sec));
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        return h + 'h ' + m + 'm ' + s + 's';
     }
 
     function buildErrorCard(error) {

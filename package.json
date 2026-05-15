@@ -150,6 +150,31 @@
         "title": "Refresh Voice Transcripts",
         "category": "Sonara",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "sonara.timeTracker.start",
+        "title": "Start Time Tracking...",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.timeTracker.stop",
+        "title": "Stop Time Tracking",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.timeTracker.toggle",
+        "title": "Toggle Time Tracking",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.timeTracker.openTodayFile",
+        "title": "Open Today's Time Tracker File",
+        "category": "Sonara"
+      },
+      {
+        "command": "sonara.timeTracker.statusBarAction",
+        "title": "Time Tracker Status Bar Action",
+        "category": "Sonara"
       }
     ],
     "menus": {
@@ -226,6 +251,10 @@
         },
         {
           "command": "sonara.voice.toggleShowAll.collapse",
+          "when": "false"
+        },
+        {
+          "command": "sonara.timeTracker.statusBarAction",
           "when": "false"
         }
       ]
@@ -366,6 +395,20 @@
           "type": "boolean",
           "default": true,
           "description": "Show toast notification after transcription"
+        },
+        "sonara.timeTracker.tickIntervalSec": {
+          "type": "number",
+          "default": 15,
+          "minimum": 1,
+          "maximum": 60,
+          "description": "How often (seconds) the time tracker adds time to the current slot while a timer is active."
+        },
+        "sonara.timeTracker.flushIntervalSec": {
+          "type": "number",
+          "default": 60,
+          "minimum": 5,
+          "maximum": 600,
+          "description": "How often (seconds) time tracker writes pending ticks to disk."
         }
       }
     }

@@ -1,4 +1,20 @@
 export const PANEL_STYLES = `
+.card-time {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground);
+    font-variant-numeric: tabular-nums;
+}
+.card-time-active {
+    color: var(--vscode-charts-green);
+    font-weight: 600;
+}
+.timer-btn.timer-btn-active {
+    color: var(--vscode-charts-green);
+}
+.timer-btn.timer-btn-active:hover {
+    color: var(--vscode-charts-red);
+}
 .body {
     flex: 1;
     overflow-y: auto;

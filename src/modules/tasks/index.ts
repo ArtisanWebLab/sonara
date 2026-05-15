@@ -6,10 +6,15 @@ import { executeRefresh } from './commands/refresh-command';
 import { executeCopyAgentContext } from './commands/copy-agent-context-command';
 import { ActiveProject } from '../../shared/active-project';
 
+export interface TasksModuleHandles {
+    store: TaskStore;
+    panel: TasksWebviewPanel;
+}
+
 export async function registerTasksModule(
     context: vscode.ExtensionContext,
     activeProject: ActiveProject,
-): Promise<void> {
+): Promise<TasksModuleHandles> {
     const store = new TaskStore(activeProject);
     context.subscriptions.push(store);
 
@@ -28,4 +33,6 @@ export async function registerTasksModule(
     );
 
     await store.initialize();
+
+    return { store, panel };
 }

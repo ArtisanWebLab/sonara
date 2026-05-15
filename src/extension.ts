@@ -4,6 +4,10 @@ import { registerActiveProjectPicker } from './shared/active-project-view';
 import { ensureSonaraProject } from './shared/project-layout';
 import { registerTasksModule } from './modules/tasks';
 import { registerVoiceModule } from './modules/voice';
+import { registerTimeTrackerModule } from './modules/time-tracker';
+import { TimerService } from './modules/time-tracker/timer-service';
+
+let timeTracker: TimerService | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const activeProject = new ActiveProject(context.workspaceState);
@@ -24,7 +28,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     registerActiveProjectPicker(context, activeProject);
 
-    await registerTasksModule(context, activeProject);
+    const tasksHandles = await registerTasksModule(context, activeProject);
+
+    timeTracker = await registerTimeTrackerModule(context, activeProject, tasksHandles.store, tasksHandles.panel);
     // Voice setup may block on Whisper installation. Run it in the background so
     // Tasks and the Active Project view become interactive immediately.
     registerVoiceModule(context, activeProject).catch(err => {
@@ -32,6 +38,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     });
 }
 
-export function deactivate(): void {
-    // Disposables registered in subscriptions handle cleanup.
+export async function deactivate(): Promise<void> {
+    if (timeTracker) {
+        await timeTracker.flush();
+    }
 }
