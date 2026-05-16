@@ -31,6 +31,20 @@ export class TaskStore implements vscode.Disposable {
         return Array.from(this.entriesByFsPath.values());
     }
 
+    public hasSlug(slug: string): boolean {
+        return this.getUriBySlug(slug) !== undefined;
+    }
+
+    public getUriBySlug(slug: string): vscode.Uri | undefined {
+        for (const [fsPath, entry] of this.entriesByFsPath) {
+            const base = path.basename(fsPath);
+            if (base.toLowerCase().endsWith('.md') && base.slice(0, -3) === slug) {
+                return entry.kind === 'task' ? entry.task.fileUri : entry.error.fileUri;
+            }
+        }
+        return undefined;
+    }
+
     public getTaskByPath(fsPath: string): Task | undefined {
         const entry = this.entriesByFsPath.get(fsPath);
         return entry?.kind === 'task' ? entry.task : undefined;

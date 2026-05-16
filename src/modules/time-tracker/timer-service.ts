@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { DayStore } from './day-store';
@@ -6,7 +5,9 @@ import { TickService } from './tick-service';
 import { IdentityService } from './identity-service';
 import { localDateKey, slotStartIso } from './local-time';
 import { ActiveProject } from '../../shared/active-project';
-import { tasksDir as layoutTasksDir, timeTrackerDaysDir } from '../../shared/project-layout';
+import { timeTrackerDaysDir } from '../../shared/project-layout';
+
+export type TaskExistsCheck = (slug: string) => boolean;
 
 const ACTIVE_SLUG_STATE = 'sonara.timeTracker.activeSlug';
 
@@ -28,6 +29,7 @@ export class TimerService implements vscode.Disposable {
         private readonly context: vscode.ExtensionContext,
         private readonly identity: IdentityService,
         private readonly activeProject: ActiveProject,
+        private readonly taskExists: TaskExistsCheck,
         tickIntervalSec: number,
         flushIntervalSec: number,
     ) {
@@ -181,10 +183,7 @@ export class TimerService implements vscode.Disposable {
     }
 
     private taskFileExists(slug: string): boolean {
-        const folder = this.activeProject.get();
-        if (!folder) return false;
-        const file = path.join(layoutTasksDir(folder), `${slug}.md`);
-        return fs.existsSync(file);
+        return this.taskExists(slug);
     }
 
     private requireDayStore(): DayStore | undefined {

@@ -28,7 +28,6 @@ export class TickService implements vscode.Disposable {
         this.flushTimer = setInterval(() => {
             void this.onFlush();
         }, flushMs);
-        void this.runTick();
     }
 
     public stop(): void {

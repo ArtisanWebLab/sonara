@@ -2,12 +2,10 @@ import * as vscode from 'vscode';
 import { ActiveProject } from '../../shared/active-project';
 import { TaskStore } from '../tasks/store/task-store';
 import { TasksWebviewPanel } from '../tasks/webview/tasks-webview-panel';
-import * as path from 'path';
 import { IdentityService } from './identity-service';
 import { TimerService } from './timer-service';
 import { taskFileSlug } from './slug';
 import { TimeTrackerStatusBar } from './status-bar';
-import { tasksDir as layoutTasksDir } from '../../shared/project-layout';
 
 export async function registerTimeTrackerModule(
     context: vscode.ExtensionContext,
@@ -20,7 +18,14 @@ export async function registerTimeTrackerModule(
     const flushIntervalSec = config.get<number>('flushIntervalSec', 60);
 
     const identity = new IdentityService(context.globalState);
-    const timer = new TimerService(context, identity, activeProject, tickIntervalSec, flushIntervalSec);
+    const timer = new TimerService(
+        context,
+        identity,
+        activeProject,
+        slug => taskStore.hasSlug(slug),
+        tickIntervalSec,
+        flushIntervalSec,
+    );
     context.subscriptions.push(timer);
 
     tasksPanel.attachTimerService(timer);
@@ -87,18 +92,13 @@ export async function registerTimeTrackerModule(
                 await vscode.commands.executeCommand('sonara.timeTracker.start');
                 return;
             }
-            const folder = activeProject.get();
-            if (!folder) {
-                await vscode.window.showWarningMessage('No active project.');
+            const uri = taskStore.getUriBySlug(slug);
+            if (!uri) {
+                await vscode.window.showWarningMessage(`Task file for \`${slug}\` was not found.`);
                 return;
             }
-            const file = path.join(layoutTasksDir(folder), `${slug}.md`);
-            try {
-                const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(file));
-                await vscode.window.showTextDocument(doc);
-            } catch {
-                await vscode.window.showWarningMessage(`Task file for \`${slug}\` was not found.`);
-            }
+            const doc = await vscode.workspace.openTextDocument(uri);
+            await vscode.window.showTextDocument(doc);
         }),
         vscode.commands.registerCommand('sonara.timeTracker.openTodayFile', async () => {
             const filePath = await timer.todayFilePath();
